@@ -1,154 +1,142 @@
 const pool = require('../config/db');
 
-// @desc    Effectuer un dépôt sur un compte
-// @route   POST /api/transactions/deposit
-// @access  Private
-const deposit = async (req, res) => {
-    const { compte_id, montant } = req.body;
-    const montantFloat = parseFloat(montant);
-
-    if (montantFloat < 1) {
-        return res.status(400).json({ message: 'Le montant minimum pour un dépôt est de 1€' });
-    }
-
-    const conn = await pool.getConnection();
-
-    try {
-        await conn.beginTransaction();
-
-        // 1. Vérifier le compte
-        const [comptes] = await conn.execute(
-            'SELECT solde, statut_compte FROM comptes_bancaires WHERE id = ? AND utilisateur_id = ? FOR UPDATE',
-            [compte_id, req.user.id]
-        );
-
-        if (comptes.length === 0) return res.status(404).json({ message: 'Compte introuvable' });
-        if (comptes[0].statut_compte === 'bloque') return res.status(403).json({ message: 'Compte bloqué. Transaction impossible.' });
-
-        // 2. Mettre à jour le solde
-        const nouveauSolde = parseFloat(comptes[0].solde) + montantFloat;
-        await conn.execute('UPDATE comptes_bancaires SET solde = ? WHERE id = ?', [nouveauSolde, compte_id]);
-
-        // 3. Enregistrer la transaction
-        await conn.execute(
-            'INSERT INTO transactions (compte_destinataire_id, type_transaction, montant, libelle) VALUES (?, ?, ?, ?)',
-            [compte_id, 'depot', montantFloat, 'Dépôt via espace client']
-        );
-
-        await conn.commit();
-        res.json({ message: 'Dépôt effectué avec succès', nouveau_solde: nouveauSolde });
-    } catch (error) {
-        await conn.rollback();
-        console.error(error);
-        res.status(500).json({ message: 'Erreur lors du dépôt' });
-    } finally {
-        conn.release();
-    }
-};
-
-// @desc    Effectuer un retrait sur un compte
-// @route   POST /api/transactions/withdraw
-// @access  Private
-const withdraw = async (req, res) => {
-    const { compte_id, montant } = req.body;
-    const montantFloat = parseFloat(montant);
-
-    if (montantFloat < 1) return res.status(400).json({ message: 'Le montant minimum est de 1€' });
-    if (montantFloat > 1000) return res.status(400).json({ message: 'Le retrait maximum autorisé est de 1000€' });
-
-    const conn = await pool.getConnection();
-
-    try {
-        await conn.beginTransaction();
-
-        const [comptes] = await conn.execute(
-            'SELECT solde, statut_compte FROM comptes_bancaires WHERE id = ? AND utilisateur_id = ? FOR UPDATE',
-            [compte_id, req.user.id]
-        );
-
-        if (comptes.length === 0) return res.status(404).json({ message: 'Compte introuvable' });
-        if (comptes[0].statut_compte === 'bloque') return res.status(403).json({ message: 'Compte bloqué.' });
-
-        const nouveauSolde = parseFloat(comptes[0].solde) - montantFloat;
-        if (nouveauSolde < 0) return res.status(400).json({ message: 'Solde insuffisant pour ce retrait. Le solde ne peut pas être négatif.' });
-
-        await conn.execute('UPDATE comptes_bancaires SET solde = ? WHERE id = ?', [nouveauSolde, compte_id]);
-
-        await conn.execute(
-            'INSERT INTO transactions (compte_source_id, type_transaction, montant, libelle) VALUES (?, ?, ?, ?)',
-            [compte_id, 'retrait', montantFloat, 'Retrait via espace client']
-        );
-
-        await conn.commit();
-        res.json({ message: 'Retrait effectué avec succès', nouveau_solde: nouveauSolde });
-    } catch (error) {
-        await conn.rollback();
-        console.error(error);
-        res.status(500).json({ message: 'Erreur lors du retrait' });
-    } finally {
-        conn.release();
-    }
-};
-
-// @desc    Effectuer un virement
+// @desc    Créer un virement entre comptes
 // @route   POST /api/transactions/transfer
 // @access  Private
-const transfer = async (req, res) => {
-    const { compte_source_id, compte_destinataire_id, montant, libelle } = req.body;
-    const montantFloat = parseFloat(montant);
+const createTransfer = async (req, res) => {
+    const { sourceId, destIban, montant, description } = req.body;
 
-    if (montantFloat < 1) return res.status(400).json({ message: 'Montant minimum 1€' });
-    if (compte_source_id === compte_destinataire_id) return res.status(400).json({ message: 'Virement vers le même compte impossible' });
+    if (!sourceId || !destIban || !montant || montant <= 0) {
+        return res.status(400).json({ message: 'Données de virement invalides.' });
+    }
 
-    const conn = await pool.getConnection();
+    const connection = await pool.getConnection();
 
     try {
-        await conn.beginTransaction();
+        await connection.beginTransaction();
 
-        // Vérification du compte source (lui appartient et non bloqué)
-        const [sourceAccounts] = await conn.execute(
-            'SELECT solde, statut_compte FROM comptes_bancaires WHERE id = ? AND utilisateur_id = ? FOR UPDATE',
-            [compte_source_id, req.user.id]
+        // 1. Vérifier compte source
+        const [sourceAccs] = await connection.execute(
+            'SELECT id, solde FROM comptes_bancaires WHERE id = ? AND utilisateur_id = ?',
+            [sourceId, req.user.id]
         );
 
-        if (sourceAccounts.length === 0) return res.status(404).json({ message: 'Compte source introuvable' });
-        if (sourceAccounts[0].statut_compte === 'bloque') return res.status(403).json({ message: 'Compte source bloqué' });
+        if (sourceAccs.length === 0) throw new Error('Compte source introuvable ou non autorisé.');
+        const sourceAcc = sourceAccs[0];
 
-        const sourceSoldeTotal = parseFloat(sourceAccounts[0].solde);
-        if (sourceSoldeTotal - montantFloat < 0) return res.status(400).json({ message: 'Solde source insuffisant' });
+        if (parseFloat(sourceAcc.solde) < montant) throw new Error('Solde insuffisant.');
 
-        // Vérification du compte de destination (juste exister et non bloqué)
-        const [destAccounts] = await conn.execute(
-            'SELECT solde, statut_compte FROM comptes_bancaires WHERE id = ? FOR UPDATE',
-            [compte_destinataire_id]
+        // 2. Vérifier compte destination via IBAN
+        const [destAccs] = await connection.execute(
+            'SELECT id FROM comptes_bancaires WHERE numero_compte = ?',
+            [destIban]
         );
 
-        if (destAccounts.length === 0) return res.status(404).json({ message: 'Compte destinataire invalide' });
-        if (destAccounts[0].statut_compte === 'bloque') return res.status(403).json({ message: 'Compte destinataire bloqué' });
+        if (destAccs.length === 0) throw new Error('Compte bénéficiaire introuvable.');
+        const destAcc = destAccs[0];
 
-        // Exécuter le transfert
-        await conn.execute('UPDATE comptes_bancaires SET solde = solde - ? WHERE id = ?', [montantFloat, compte_source_id]);
-        await conn.execute('UPDATE comptes_bancaires SET solde = solde + ? WHERE id = ?', [montantFloat, compte_destinataire_id]);
+        if (sourceAcc.id === destAcc.id) throw new Error("Vous ne pouvez pas virer de l'argent sur le même compte.");
 
-        // Enregistrement des transactions
-        await conn.execute(
-            'INSERT INTO transactions (compte_source_id, compte_destinataire_id, type_transaction, montant, libelle) VALUES (?, ?, ?, ?, ?)',
-            [compte_source_id, compte_destinataire_id, 'virement emis', montantFloat, libelle || 'Virement émis']
-        );
-        await conn.execute(
-            'INSERT INTO transactions (compte_source_id, compte_destinataire_id, type_transaction, montant, libelle) VALUES (?, ?, ?, ?, ?)',
-            [compte_source_id, compte_destinataire_id, 'virement recu', montantFloat, libelle || 'Virement reçu']
+        // 3. Effectuer le virement
+        await connection.execute(
+            'UPDATE comptes_bancaires SET solde = solde - ? WHERE id = ?',
+            [montant, sourceAcc.id]
         );
 
-        await conn.commit();
-        res.json({ message: 'Virement effectué avec succès' });
+        await connection.execute(
+            'UPDATE comptes_bancaires SET solde = solde + ? WHERE id = ?',
+            [montant, destAcc.id]
+        );
+
+        // 4. Enregistrer la transaction
+        await connection.execute(
+            'INSERT INTO transactions (compte_source_id, compte_dest_id, type, montant, description) VALUES (?, ?, "virement", ?, ?)',
+            [sourceAcc.id, destAcc.id, montant, description || 'Virement']
+        );
+
+        await connection.commit();
+        res.status(200).json({ message: 'Virement effectué avec succès.' });
+
     } catch (error) {
-        await conn.rollback();
+        await connection.rollback();
         console.error(error);
-        res.status(500).json({ message: 'Erreur lors du virement' });
+        res.status(400).json({ message: error.message || 'Erreur lors du virement' });
     } finally {
-        conn.release();
+        connection.release();
     }
 };
 
-module.exports = { deposit, withdraw, transfer };
+// @desc    Ajouter des fonds extérieurs (Dépôt)
+// @route   POST /api/transactions/deposit
+// @access  Private
+const depositFunds = async (req, res) => {
+    const { accountId, montant } = req.body;
+
+    if (!accountId || !montant || montant <= 0) {
+        return res.status(400).json({ message: 'Données de dépôt invalides.' });
+    }
+
+    try {
+        const [accounts] = await pool.execute(
+            'SELECT id FROM comptes_bancaires WHERE id = ? AND utilisateur_id = ?',
+            [accountId, req.user.id]
+        );
+
+        if (accounts.length === 0) {
+            return res.status(404).json({ message: 'Compte introuvable ou non autorisé.' });
+        }
+
+        await pool.execute(
+            'UPDATE comptes_bancaires SET solde = solde + ? WHERE id = ?',
+            [montant, accountId]
+        );
+
+        await pool.execute(
+            'INSERT INTO transactions (compte_dest_id, type, montant, description) VALUES (?, "depot", ?, "Dépôt initial / externe")',
+            [accountId, montant]
+        );
+
+        res.status(200).json({ message: 'Fonds ajoutés avec succès.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Erreur lors du dépôt.' });
+    }
+};
+
+// @desc    Historique des transactions
+// @route   GET /api/transactions/:accountId
+// @access  Private
+const getTransactions = async (req, res) => {
+    const accountId = req.params.accountId;
+
+    try {
+        // Vérif autorisation (est-ce bien le compte de l'utilisateur)
+        const [accounts] = await pool.execute(
+            'SELECT id FROM comptes_bancaires WHERE id = ? AND utilisateur_id = ?',
+            [accountId, req.user.id]
+        );
+
+        if (accounts.length === 0) return res.status(404).json({ message: 'Compte non autorisé.' });
+
+        // Historique
+        const [transactions] = await pool.execute(
+            `SELECT t.*, 
+            c_dest.numero_compte AS dest_iban, c_dest.type_compte AS dest_type,
+            c_source.numero_compte AS source_iban, c_source.type_compte AS source_type
+            FROM transactions t
+            LEFT JOIN comptes_bancaires c_dest ON t.compte_dest_id = c_dest.id
+            LEFT JOIN comptes_bancaires c_source ON t.compte_source_id = c_source.id
+            WHERE t.compte_source_id = ? OR t.compte_dest_id = ?
+            ORDER BY t.date_transaction DESC
+            LIMIT 20`,
+            [accountId, accountId]
+        );
+
+        res.json(transactions);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Erreur de récupération.' });
+    }
+};
+
+module.exports = { createTransfer, depositFunds, getTransactions };

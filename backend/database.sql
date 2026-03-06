@@ -10,6 +10,8 @@
 -- --------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `utilisateurs` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
+  `prenom` VARCHAR(100) DEFAULT NULL,
+  `nom` VARCHAR(100) DEFAULT NULL,
   `email` VARCHAR(150) NOT NULL UNIQUE,
   `telephone` VARCHAR(15) DEFAULT NULL,
   `adresse_postale` VARCHAR(255) DEFAULT NULL,
@@ -28,6 +30,7 @@ CREATE TABLE IF NOT EXISTS `comptes_bancaires` (
   `numero_compte` VARCHAR(34) NOT NULL UNIQUE, -- Format IBAN : FR76-...
   `type_compte` ENUM('courant', 'livret A', 'PEL') DEFAULT 'courant',
   `solde` DECIMAL(15, 2) NOT NULL DEFAULT 0.00,
+  `devise` VARCHAR(3) DEFAULT 'EUR',
   `statut_compte` ENUM('actif', 'bloque') DEFAULT 'actif',
   `date_creation` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (`utilisateur_id`) REFERENCES `utilisateurs`(`id`) ON DELETE CASCADE

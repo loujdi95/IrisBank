@@ -4,6 +4,9 @@ const jwt = require('jsonwebtoken');
 
 // Fonction utilitaire pour générer le token JWT
 const generateToken = (id, est_admin) => {
+    if (!process.env.JWT_SECRET) {
+        throw new Error('JWT_SECRET is not defined in environment variables');
+    }
     return jwt.sign({ id, est_admin }, process.env.JWT_SECRET, {
         expiresIn: '30d',
     });
@@ -56,8 +59,8 @@ const registerUser = async (req, res) => {
             token: generateToken(result.insertId, false)
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Erreur serveur lors de l\'inscription' });
+        console.error('Erreur lors de l\'inscription :', error);
+        res.status(500).json({ message: 'Erreur serveur lors de l\'inscription', error: error.message });
     }
 };
 

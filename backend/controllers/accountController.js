@@ -17,7 +17,7 @@ const generateIBAN = () => {
 // @route   POST /api/accounts
 // @access  Private
 const createAccount = async (req, res) => {
-    const { type_compte } = req.body;
+    const { type_compte, type_carte } = req.body;
     const validTypes = ['courant', 'livret A', 'PEL'];
 
     if (type_compte && !validTypes.includes(type_compte)) {
@@ -25,11 +25,12 @@ const createAccount = async (req, res) => {
     }
 
     const generatedIBAN = generateIBAN();
+    const initialBalance = Math.floor(Math.random() * (3000 - 500 + 1)) + 500;
 
     try {
         const [result] = await pool.execute(
-            'INSERT INTO comptes_bancaires (utilisateur_id, numero_compte, type_compte, solde, statut_compte) VALUES (?, ?, ?, ?, ?)',
-            [req.user.id, generatedIBAN, type_compte || 'courant', 0.00, 'actif']
+            'INSERT INTO comptes_bancaires (utilisateur_id, numero_compte, type_compte, type_carte, solde, statut_compte) VALUES (?, ?, ?, ?, ?, ?)',
+            [req.user.id, generatedIBAN, type_compte || 'courant', type_carte || null, initialBalance, 'actif']
         );
 
         res.status(201).json({
@@ -38,7 +39,8 @@ const createAccount = async (req, res) => {
                 id: result.insertId,
                 numero_compte: generatedIBAN,
                 type_compte: type_compte || 'courant',
-                solde: 0.00,
+                type_carte: type_carte || null,
+                solde: initialBalance,
                 statut_compte: 'actif'
             }
         });

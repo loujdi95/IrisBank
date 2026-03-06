@@ -11,10 +11,28 @@ app.use(cors({
 app.use(express.json()); // Permet de lire le corps des requêtes en JSON
 app.use(express.urlencoded({ extended: true }));
 
+// Debug Middleware - Log all requests
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    if (req.body && Object.keys(req.body).length > 0) {
+        const bodyCopy = { ...req.body };
+        if (bodyCopy.password) bodyCopy.password = '********';
+        console.log('Body:', bodyCopy);
+    }
+    next();
+});
+
+// Startup Check
+if (!process.env.JWT_SECRET) {
+    console.warn('WARNING: JWT_SECRET is not defined in .env! Authentication will fail.');
+}
+
 // Routes
 app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/accounts', require('./routes/accountRoutes'));
 app.use('/api/transactions', require('./routes/transactionRoutes'));
+app.use('/api/ai', require('./routes/aiRoutes'));
 
 // Test Route
 app.get('/', (req, res) => {
@@ -25,4 +43,13 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Serveur IrisBank démarré sur le port ${PORT}`);
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+    console.error('CRITICAL ERROR:', err);
+    res.status(500).json({
+        message: 'Une erreur interne est survenue',
+        error: err.message
+    });
 });

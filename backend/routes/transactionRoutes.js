@@ -1,11 +1,11 @@
 const express = require('express');
-const router = express.Router();
-const { deposit, withdraw, transfer } = require('../controllers/transactionController');
+const { createTransfer, depositFunds, getTransactions } = require('../controllers/transactionController');
 const { protect } = require('../middlewares/authMiddleware');
 
-// Toutes les transactions nécessitent d'être connecté
-router.post('/deposit', protect, deposit);
-router.post('/withdraw', protect, withdraw);
-router.post('/transfer', protect, transfer);
+const router = express.Router();
+
+router.post('/transfer', protect, createTransfer);
+router.post('/deposit', protect, depositFunds);
+router.get('/:accountId', protect, getTransactions);
 
 module.exports = router;

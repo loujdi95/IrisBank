@@ -1,51 +1,33 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-
+import { Toaster } from 'react-hot-toast';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-
-// Création d'un thème minimaliste MUI avec une couleur principale bleue
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#2563eb', // blue-600 de Tailwind
-    },
-    secondary: {
-      main: '#0d9488', // teal-600
-    },
-    background: {
-      default: '#f3f4f6', // gray-100
-    }
-  },
-  typography: {
-    fontFamily: [
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'Roboto',
-      '"Helvetica Neue"',
-      'Arial',
-      'sans-serif',
-      '"Apple Color Emoji"',
-      '"Segoe UI Emoji"',
-      '"Segoe UI Symbol"',
-    ].join(','),
-  },
-});
+import Profile from './pages/Profile';
+import Chatbot from './components/Chatbot';
 
 function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          className: 'premium-card !p-4 !rounded-2xl !bg-white/90 !backdrop-blur-md !border-none !shadow-2xl',
+          duration: 4000,
+          style: {
+            fontFamily: 'Inter, sans-serif',
+          },
+        }}
+      />
       <Router>
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<Login />} />
         </Routes>
+        <Chatbot />
       </Router>
-    </ThemeProvider>
+    </>
   );
 }
 
