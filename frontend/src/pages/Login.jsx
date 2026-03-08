@@ -107,7 +107,7 @@ export default function Login() {
             <AppBar position="static" elevation={0} sx={{ bgcolor: 'white', borderBottom: '1px solid #E0E4E8', py: 1 }}>
                 <Toolbar component={Container} maxWidth="lg" sx={{ display: 'flex', justifyContent: 'space-between' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <img src="/logo.svg" alt="IrisBank Logo" style={{ height: '120px', objectFit: 'contain', mixBlendMode: 'multiply' }} />
+                        <img src="/logo.png" alt="IrisBank Logo" style={{ height: '100px', objectFit: 'contain', mixBlendMode: 'multiply' }} />
                         <IconButton size="small" sx={{ border: '1px solid #E0E4E8', ml: 2, bgcolor: '#F5F7F9' }}><HomeIcon fontSize="small" /></IconButton>
                         <IconButton size="small" sx={{ border: '1px solid #E0E4E8' }}><Search fontSize="small" /></IconButton>
                     </Box>

@@ -2,7 +2,7 @@ const { OpenAI } = require('openai');
 const db = require('../config/db');
 
 const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey: process.env.OPENAI_API_KEY || 'sk-dummy-key-to-prevent-crash-on-boot',
 });
 
 exports.getBankAdvice = async (req, res, next) => {

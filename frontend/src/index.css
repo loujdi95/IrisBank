@@ -1,42 +1,49 @@
 @import "tailwindcss";
 
-@theme {
-  --color-bank-blue: #003399;
-  /* Deep institutional blue */
-  --color-bank-red: #E2001A;
-  /* Action/Brand red */
-  --color-bank-gray: #F5F7F9;
-  /* Clean background gray */
+:root {
+  /* CM-Specific Colors */
+  --color-cm-blue: #002B5E;
+  --color-cm-red: #D3002D;
+  --color-cm-green: #008000;
+  --color-cm-light: #F4F4F4;
+  --color-cm-text: #333333;
+  --color-cm-border: #E5E5E5;
 }
 
-@layer base {
-  body {
-    @apply bg-[var(--color-bank-gray)] text-slate-900 antialiased;
-    font-family: 'Open Sans', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  }
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-cm-light);
+  color: var(--color-cm-text);
+  font-family: Arial, Helvetica, sans-serif;
+  /* CM typical font stack */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-@layer components {
-  .login-container {
-    @apply bg-white border border-slate-200 rounded-lg overflow-hidden;
-    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
-  }
-
-  .bank-header-link {
-    @apply text-[11px] font-bold text-slate-600 hover:text-bank-blue transition-colors px-3 py-2 border-b-2 border-transparent hover:border-bank-blue;
-  }
-
-  .btn-bank-primary {
-    @apply bg-[var(--color-bank-blue)] text-white font-bold py-3 px-8 rounded-full shadow-md hover:bg-blue-800 transition-all active:scale-95;
-  }
-
-  .realistic-card-wrapper {
-    @apply transition-transform duration-500;
-    perspective: 1000px;
-  }
+* {
+  box-sizing: border-box;
 }
 
-/* Adjustments for MUI interaction */
+/* Override MUI globals */
+.MuiTypography-root {
+  font-family: Arial, Helvetica, sans-serif !important;
+}
+
+/* Remove all generic shadows / radii */
+.MuiPaper-root {
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
 .MuiButton-root {
+  box-shadow: none !important;
   text-transform: none !important;
+  border-radius: 20px !important;
+}
+
+html,
+body,
+#root {
+  min-height: 100vh;
 }

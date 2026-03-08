@@ -50,7 +50,7 @@ const createTransfer = async (req, res) => {
 
         // 4. Enregistrer la transaction
         await connection.execute(
-            'INSERT INTO transactions (compte_source_id, compte_dest_id, type, montant, description) VALUES (?, ?, "virement", ?, ?)',
+            'INSERT INTO transactions (compte_source_id, compte_destinataire_id, type_transaction, montant, libelle) VALUES (?, ?, "virement emis", ?, ?)',
             [sourceAcc.id, destAcc.id, montant, description || 'Virement']
         );
 
@@ -92,7 +92,7 @@ const depositFunds = async (req, res) => {
         );
 
         await pool.execute(
-            'INSERT INTO transactions (compte_dest_id, type, montant, description) VALUES (?, "depot", ?, "Dépôt initial / externe")',
+            'INSERT INTO transactions (compte_destinataire_id, type_transaction, montant, libelle) VALUES (?, "depot", ?, "Dépôt initial / externe")',
             [accountId, montant]
         );
 
@@ -124,9 +124,9 @@ const getTransactions = async (req, res) => {
             c_dest.numero_compte AS dest_iban, c_dest.type_compte AS dest_type,
             c_source.numero_compte AS source_iban, c_source.type_compte AS source_type
             FROM transactions t
-            LEFT JOIN comptes_bancaires c_dest ON t.compte_dest_id = c_dest.id
+            LEFT JOIN comptes_bancaires c_dest ON t.compte_destinataire_id = c_dest.id
             LEFT JOIN comptes_bancaires c_source ON t.compte_source_id = c_source.id
-            WHERE t.compte_source_id = ? OR t.compte_dest_id = ?
+            WHERE t.compte_source_id = ? OR t.compte_destinataire_id = ?
             ORDER BY t.date_transaction DESC
             LIMIT 20`,
             [accountId, accountId]
