@@ -7,6 +7,7 @@ import Comptes from './pages/Comptes';
 import Virements from './pages/Virements';
 import Cartes from './pages/Cartes';
 import Simulations from './pages/Simulations';
+import Admin from './pages/Admin';
 import Chatbot from './components/Chatbot';
 import DashboardLayout from './components/DashboardLayout';
 
@@ -34,6 +35,7 @@ function App() {
             <Route path="/virements" element={<Virements />} />
             <Route path="/cartes" element={<Cartes />} />
             <Route path="/simulations" element={<Simulations />} />
+            <Route path="/admin" element={<Admin />} />
           </Route>
 
           <Route path="*" element={<Login />} />

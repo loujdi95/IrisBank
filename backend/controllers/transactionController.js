@@ -6,8 +6,8 @@ const pool = require('../config/db');
 const createTransfer = async (req, res) => {
     const { sourceId, destIban, montant, description } = req.body;
 
-    if (!sourceId || !destIban || !montant || montant <= 0) {
-        return res.status(400).json({ message: 'Données de virement invalides.' });
+    if (!sourceId || !destIban || !montant || montant < 1) {
+        return res.status(400).json({ message: 'Le montant du virement doit être d\'au moins 1€.' });
     }
 
     const connection = await pool.getConnection();
@@ -72,8 +72,8 @@ const createTransfer = async (req, res) => {
 const depositFunds = async (req, res) => {
     const { accountId, montant } = req.body;
 
-    if (!accountId || !montant || montant <= 0) {
-        return res.status(400).json({ message: 'Données de dépôt invalides.' });
+    if (!accountId || !montant || montant < 1) {
+        return res.status(400).json({ message: 'Le montant du dépôt doit être d\'au moins 1€.' });
     }
 
     try {
@@ -139,4 +139,50 @@ const getTransactions = async (req, res) => {
     }
 };
 
-module.exports = { createTransfer, depositFunds, getTransactions };
+// @desc    Retirer des fonds (Retrait DAB)
+// @route   POST /api/transactions/withdraw
+// @access  Private
+const withdrawFunds = async (req, res) => {
+    const { accountId, montant } = req.body;
+
+    if (!accountId || !montant || montant < 1) {
+        return res.status(400).json({ message: 'Le montant du retrait doit être d\'au moins 1€.' });
+    }
+
+    if (montant > 1000) {
+        return res.status(400).json({ message: 'Le montant maximum par retrait est de 1000€.' });
+    }
+
+    try {
+        const [accounts] = await pool.execute(
+            'SELECT id, solde FROM comptes_bancaires WHERE id = ? AND utilisateur_id = ?',
+            [accountId, req.user.id]
+        );
+
+        if (accounts.length === 0) {
+            return res.status(404).json({ message: 'Compte introuvable ou non autorisé.' });
+        }
+
+        const currentBalance = parseFloat(accounts[0].solde);
+        if (currentBalance < montant) {
+            return res.status(400).json({ message: 'Solde insuffisant pour effectuer ce retrait.' });
+        }
+
+        await pool.execute(
+            'UPDATE comptes_bancaires SET solde = solde - ? WHERE id = ?',
+            [montant, accountId]
+        );
+
+        await pool.execute(
+            'INSERT INTO transactions (compte_source_id, type_transaction, montant, libelle) VALUES (?, "retrait", ?, "Retrait DAB")',
+            [accountId, montant]
+        );
+
+        res.status(200).json({ message: 'Retrait effectué avec succès.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Erreur lors du retrait.' });
+    }
+};
+
+module.exports = { createTransfer, depositFunds, withdrawFunds, getTransactions };

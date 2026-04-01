@@ -2,7 +2,7 @@ const mysql = require('mysql2/promise');
 require('dotenv').config();
 
 // Création d'un pool de connexion pour la base de données
-const pool = mysql.createPool({
+const dbConfig = process.env.MYSQL_URL || {
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
@@ -11,7 +11,9 @@ const pool = mysql.createPool({
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
-});
+};
+
+const pool = mysql.createPool(dbConfig);
 
 // Tester la connexion (optionnel, pratique au démarrage du serveur)
 pool.getConnection()

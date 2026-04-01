@@ -39,11 +39,15 @@ export default function DashboardLayout({ children }) {
     const navLinks = [
         { text: 'Situation', path: '/dashboard' },
         { text: 'Comptes', path: '/comptes' },
-        { text: 'Opérations', path: '/virements' }, // Mapping Opérations to Virements for now
-        { text: 'Services', path: '/cartes' }, // Mapping Services to Cartes
-        { text: 'Profil et Sécurité', path: '/profile' },
+        { text: 'Opérations', path: '/virements' },
+        { text: 'Services', path: '/cartes' },
+        { text: 'Profil', path: '/profile' },
         { text: 'Simulations', path: '/simulations' }
     ];
+
+    if (user?.est_admin) {
+        navLinks.push({ text: 'Administration', path: '/admin' });
+    }
 
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: '#F4F4F4' }}>

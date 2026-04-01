@@ -4,6 +4,7 @@
   "description": "Root package to run both frontend and backend concurrently.",
   "scripts": {
     "start": "concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+    "dev": "npm start",
     "start:backend": "cd backend && npx nodemon server.js",
     "start:frontend": "cd frontend && npm run dev",
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install"
