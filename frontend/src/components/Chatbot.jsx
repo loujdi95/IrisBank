@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Box, Paper, Typography, TextField, IconButton, Fab, Divider } from '@mui/material';
 import { SmartToy, Close, Send } from '@mui/icons-material';
@@ -14,6 +14,15 @@ export default function Chatbot() {
     ]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(false);
+    const messagesEndRef = useRef(null);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages, loading]);
 
     if (location.pathname === '/') return null;
 
@@ -67,6 +76,7 @@ export default function Chatbot() {
     return (
         <Paper
             elevation={3}
+            className="chatbot-container"
             sx={{
                 position: 'fixed',
                 bottom: 24,
@@ -76,9 +86,6 @@ export default function Chatbot() {
                 display: 'flex',
                 flexDirection: 'column',
                 zIndex: 1000,
-                borderRadius: 1, /* Sharper corners */
-                border: '1px solid #E0E4E8',
-                overflow: 'hidden'
             }}
         >
             {/* Header */}
@@ -94,20 +101,32 @@ export default function Chatbot() {
                 {messages.map((msg, idx) => (
                     <Box
                         key={idx}
+                        className={`chat-message ${msg.sender === 'user' ? 'chat-user-msg' : 'chat-ai-msg'}`}
                         sx={{
                             alignSelf: msg.sender === 'user' ? 'flex-end' : 'flex-start',
-                            maxWidth: '80%',
-                            bgcolor: msg.sender === 'user' ? '#002B5E' : 'white',
-                            color: msg.sender === 'user' ? 'white' : 'text.primary',
-                            p: 2,
-                            borderRadius: 1,
-                            boxShadow: msg.sender === 'user' ? 'none' : '0 1px 3px rgba(0,0,0,0.05)',
-                            border: msg.sender === 'user' ? 'none' : '1px solid #E0E4E8'
                         }}
                     >
                         <Typography variant="body2">{msg.text}</Typography>
                     </Box>
                 ))}
+
+                {loading && (
+                    <Box
+                        className="chat-message chat-ai-msg"
+                        sx={{
+                            alignSelf: 'flex-start',
+                            display: 'flex',
+                            gap: 0.8,
+                            alignItems: 'center',
+                            minHeight: '44px' // roughly the height of a small text box
+                        }}
+                    >
+                        <div className="typing-dot" />
+                        <div className="typing-dot" />
+                        <div className="typing-dot" />
+                    </Box>
+                )}
+                <div ref={messagesEndRef} />
             </Box>
 
             <Divider />

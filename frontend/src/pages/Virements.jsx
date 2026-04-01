@@ -1,12 +1,42 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, Container, Paper, Grid, TextField, Button, MenuItem, InputAdornment, Divider } from '@mui/material';
-import { Send, AccountBalanceWallet, SwapHoriz } from '@mui/icons-material';
+import { Box, Typography, Container, Paper, Grid, TextField, Button, MenuItem, InputAdornment, Divider, Stepper, Step, StepLabel, StepConnector, Avatar, IconButton } from '@mui/material';
+import { Send, AccountBalanceWallet, SwapHoriz, ArrowForward, ArrowBack, CheckCircle, Search, Add } from '@mui/icons-material';
+import { styled } from '@mui/material/styles';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 
 const API_URL = 'http://localhost:5000/api';
 
+const QontoConnector = styled(StepConnector)(({ theme }) => ({
+    [`&.MuiStepConnector-root`]: {
+        marginLeft: 16,
+    },
+    [`& .MuiStepConnector-line`]: {
+        borderColor: '#E2E8F0',
+        borderLeftWidth: 2,
+        minHeight: 30,
+    },
+}));
+
+const FormatCurrency = ({ amount }) => {
+    const isNegative = amount < 0;
+    const formatted = Math.abs(amount).toLocaleString('fr-FR', {
+        style: 'currency',
+        currency: 'EUR',
+    });
+    return (
+        <Typography sx={{ 
+            fontWeight: 800, 
+            color: isNegative ? '#EF4444' : '#22C55E',
+            fontSize: '1rem'
+        }}>
+            {isNegative ? '-' : '+'} {formatted}
+        </Typography>
+    );
+};
+
 export default function Virements() {
+    const [activeStep, setActiveStep] = useState(0);
     const [accounts, setAccounts] = useState([]);
     const [sourceId, setSourceId] = useState('');
     const [destIban, setDestIban] = useState('');
@@ -15,7 +45,9 @@ export default function Virements() {
     const [loading, setLoading] = useState(false);
     const [transactions, setTransactions] = useState([]);
     const [beneficiaries, setBeneficiaries] = useState([]);
-    const [selectedBen, setSelectedBen] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const steps = ['Débit', 'Bénéficiaire', 'Montant'];
 
     useEffect(() => {
         fetchAccounts();
@@ -35,7 +67,7 @@ export default function Virements() {
             }
         } catch (error) {
             console.error(error);
-            toast.error("Erreur lors de la récupération des comptes");
+            toast.error("Erreur de récupération");
         }
     };
 
@@ -55,8 +87,7 @@ export default function Virements() {
         }
     };
 
-    const handleTransfer = async (e) => {
-        e.preventDefault();
+    const handleTransfer = async () => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
@@ -68,12 +99,12 @@ export default function Virements() {
             }, { headers: { Authorization: `Bearer ${token}` } });
 
             toast.success("Virement effectué avec succès");
+            setActiveStep(0);
             setDestIban('');
-            setSelectedBen('');
             setMontant('');
             setDescription('');
-            fetchAccounts(); // Refresh balances
-            fetchTransactions(sourceId); // Refresh history
+            fetchAccounts();
+            fetchTransactions(sourceId);
         } catch (error) {
             toast.error(error.response?.data?.message || "Erreur lors du virement");
         } finally {
@@ -81,223 +112,237 @@ export default function Virements() {
         }
     };
 
+    const selectedSource = accounts.find(a => a.id === sourceId);
+
     return (
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-            <Box sx={{ mb: 4 }}>
-                <Typography variant="h5" sx={{ textTransform: 'uppercase', color: '#333', mb: 0.5, fontSize: '1.4rem', fontWeight: 400 }}>
-                    Opérations et Virements
+        <Box sx={{ pb: 8 }}>
+            <Box sx={{ mb: 6 }}>
+                <Typography variant="h4" sx={{ color: 'var(--iris-blue)', fontWeight: 800, mb: 1, letterSpacing: '-0.02em' }}>
+                    Effectuer un virement
+                </Typography>
+                <Typography variant="body2" sx={{ color: 'var(--iris-text-light)', fontWeight: 500 }}>
+                    Transférez des fonds en toute sécurité vers vos comptes ou vos bénéficiaires.
                 </Typography>
             </Box>
 
-            <Grid container spacing={4}>
-                <Grid item xs={12} md={8}>
-                    <Paper elevation={0} sx={{ borderTop: '4px solid #F4F4F4', borderRadius: 0, bgcolor: 'transparent' }}>
-                        <Box sx={{ bgcolor: '#FFFFFF', p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E5E5E5' }}>
-                            <Typography sx={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#002B5E', textTransform: 'uppercase' }}>
-                                Saisir un Virement
-                            </Typography>
-                        </Box>
+            <Grid container spacing={5} justifyContent="center">
+                {/* Main Stepper Column */}
+                <Grid item xs={12} lg={8}>
+                    <Paper elevation={0} className="premium-card" sx={{ p: 0, overflow: 'hidden' }}>
+                        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' } }}>
+                            {/* Desktop Stepper */}
+                            <Box sx={{ bgcolor: '#F8FAFC', p: 4, width: { xs: '100%', md: '220px' }, borderRight: '1px solid var(--iris-border)', borderBottom: { xs: '1px solid var(--iris-border)', md: 'none' } }}>
+                                <Stepper activeStep={activeStep} orientation="vertical" connector={<QontoConnector />}>
+                                    {steps.map((label, index) => (
+                                        <Step key={label}>
+                                            <StepLabel StepIconProps={{ sx: { fontSize: '1.5rem' } }}>
+                                                <Typography sx={{ fontWeight: activeStep === index ? 800 : 500, fontSize: '0.85rem', color: activeStep === index ? 'var(--iris-blue)' : 'var(--iris-text-light)' }}>
+                                                    {label}
+                                                </Typography>
+                                            </StepLabel>
+                                        </Step>
+                                    ))}
+                                </Stepper>
+                            </Box>
 
-                        <Box sx={{ bgcolor: '#FFFFFF', p: 4 }}>
-                            <form onSubmit={handleTransfer}>
-                                <Grid container spacing={3}>
-                                    <Grid item xs={12}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                            <AccountBalanceWallet sx={{ color: '#002B5E', mr: 1 }} />
-                                            <Typography variant="subtitle1" sx={{ color: '#002B5E', fontWeight: 'bold' }}>1. Compte à débiter</Typography>
-                                        </Box>
-                                        <TextField
-                                            select
-                                            fullWidth
-                                            size="medium"
-                                            value={sourceId}
-                                            onChange={(e) => setSourceId(e.target.value)}
-                                            required
-                                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1, bgcolor: '#F9F9F9' } }}
-                                        >
-                                            {accounts.map((account) => (
-                                                <MenuItem key={account.id} value={account.id} sx={{ py: 1.5 }}>
-                                                    <Box>
-                                                        <Typography sx={{ fontWeight: 'bold' }}>{account.type_compte.toUpperCase()}</Typography>
-                                                        <Typography sx={{ fontSize: '0.85rem', color: '#666' }}>{account.numero_compte} - Solde: {parseFloat(account.solde).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} EUR</Typography>
+                            {/* Content Area */}
+                            <Box sx={{ p: { xs: 3, md: 5 }, flexGrow: 1 }}>
+                                {activeStep === 0 && (
+                                    <Box>
+                                        <Typography sx={{ fontWeight: 800, mb: 3 }}>Choisir le compte à débiter</Typography>
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                            {accounts.map((acc) => (
+                                                <Box 
+                                                    key={acc.id}
+                                                    onClick={() => setSourceId(acc.id)}
+                                                    sx={{ 
+                                                        p: 2.5, 
+                                                        borderRadius: '16px', 
+                                                        border: '2px solid', 
+                                                        borderColor: sourceId === acc.id ? 'var(--iris-blue)' : 'var(--iris-border)',
+                                                        bgcolor: sourceId === acc.id ? 'var(--iris-blue-light)' : 'white',
+                                                        cursor: 'pointer',
+                                                        transition: 'all 0.2s',
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center'
+                                                    }}
+                                                >
+                                                    <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                                                        <Avatar sx={{ bgcolor: sourceId === acc.id ? 'var(--iris-blue)' : '#E2E8F0', width: 40, height: 40 }}>
+                                                            <AccountBalanceWallet sx={{ fontSize: '1.2rem' }} />
+                                                        </Avatar>
+                                                        <Box>
+                                                            <Typography sx={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--iris-text)' }}>
+                                                                {acc.type_compte === 'courant' ? 'Eurocompte Jeune' : 'Livret Bleu'}
+                                                            </Typography>
+                                                            <Typography sx={{ fontSize: '0.75rem', color: 'var(--iris-text-light)', fontFamily: 'monospace' }}>
+                                                                {acc.numero_compte}
+                                                            </Typography>
+                                                        </Box>
                                                     </Box>
-                                                </MenuItem>
+                                                    <FormatCurrency amount={acc.solde} />
+                                                </Box>
                                             ))}
-                                            {accounts.length === 0 && <MenuItem disabled>Aucun compte disponible</MenuItem>}
-                                        </TextField>
-                                    </Grid>
+                                        </Box>
+                                    </Box>
+                                )}
 
-                                    <Grid item xs={12} sx={{ display: 'flex', justifyContent: 'center', my: -1 }}>
-                                        <SwapHoriz sx={{ transform: 'rotate(90deg)', color: '#CCC', fontSize: '2rem' }} />
-                                    </Grid>
+                                {activeStep === 1 && (
+                                    <Box>
+                                        <Typography sx={{ fontWeight: 800, mb: 3 }}>Sélectionner le bénéficiaire</Typography>
+                                        
+                                        {/* My Accounts Section for Internal Transfers */}
+                                        <Box sx={{ mb: 4 }}>
+                                            <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--iris-text-light)', textTransform: 'uppercase', mb: 2, letterSpacing: '0.05em' }}>
+                                                Mes comptes
+                                            </Typography>
+                                            <Box className="minimal-group-card">
+                                                {accounts.filter(acc => acc.id !== sourceId).map((acc, idx) => (
+                                                    <Box 
+                                                        key={acc.id}
+                                                        onClick={() => setDestIban(acc.numero_compte)}
+                                                        className="op-row"
+                                                        sx={{ 
+                                                            bgcolor: destIban === acc.numero_compte ? '#F0F7FF' : 'transparent',
+                                                            cursor: 'pointer'
+                                                        }}
+                                                    >
+                                                        <Box className="monochrome-icon-box" sx={{ mr: 2, bgcolor: destIban === acc.numero_compte ? '#DEE9FF' : '#F8FAFC' }}>
+                                                            <AccountBalanceWallet sx={{ fontSize: '1.2rem' }} />
+                                                        </Box>
+                                                        <Box sx={{ flexGrow: 1 }}>
+                                                            <Typography className="text-pro-main">
+                                                                {acc.type_compte === 'courant' ? 'Eurocompte Jeune' : 'Livret Bleu'}
+                                                            </Typography>
+                                                            <Typography className="text-pro-sub">{acc.numero_compte}</Typography>
+                                                        </Box>
+                                                        <Box sx={{ textAlign: 'right' }}>
+                                                            <Typography sx={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--iris-text)' }}>
+                                                                {parseFloat(acc.solde).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                                                            </Typography>
+                                                        </Box>
+                                                    </Box>
+                                                ))}
+                                            </Box>
+                                        </Box>
 
-                                    <Grid item xs={12}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                            <Send sx={{ color: '#002B5E', mr: 1, fontSize: '1.2rem' }} />
-                                            <Typography variant="subtitle1" sx={{ color: '#002B5E', fontWeight: 'bold' }}>2. Compte à créditer</Typography>
+                                        <Box sx={{ mb: 4 }}>
+                                            <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--iris-text-light)', textTransform: 'uppercase', mb: 2, letterSpacing: '0.05em' }}>
+                                                Virement externe
+                                            </Typography>
+                                            <TextField
+                                                fullWidth
+                                                label="Saisir un IBAN"
+                                                placeholder="FR76..."
+                                                value={destIban}
+                                                onChange={(e) => setDestIban(e.target.value)}
+                                                InputProps={{
+                                                    startAdornment: <InputAdornment position="start"><Search /></InputAdornment>,
+                                                }}
+                                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: 'white' } }}
+                                            />
                                         </Box>
 
                                         {beneficiaries.length > 0 && (
-                                            <TextField
-                                                select
-                                                fullWidth
-                                                size="medium"
-                                                label="Choisir un bénéficiaire enregistré (optionnel)"
-                                                value={selectedBen}
-                                                onChange={(e) => {
-                                                    setSelectedBen(e.target.value);
-                                                    if (e.target.value) setDestIban(e.target.value);
-                                                }}
-                                                sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1 }, mb: 2 }}
-                                            >
-                                                <MenuItem value="">Saisir un nouvel IBAN manuellement</MenuItem>
-                                                {beneficiaries.map((ben, idx) => (
-                                                    <MenuItem key={idx} value={ben.iban}>
-                                                        {ben.nom} ({ben.iban})
-                                                    </MenuItem>
-                                                ))}
-                                            </TextField>
+                                            <Box sx={{ mb: 1 }}>
+                                                <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--iris-text-light)', textTransform: 'uppercase', mb: 2, letterSpacing: '0.05em' }}>
+                                                    Bénéficiaires enregistrés
+                                                </Typography>
+                                                <Box className="minimal-group-card">
+                                                    {beneficiaries.map((ben, idx) => (
+                                                        <Box 
+                                                            key={idx}
+                                                            onClick={() => setDestIban(ben.iban)}
+                                                            className="op-row"
+                                                            sx={{ 
+                                                                bgcolor: destIban === ben.iban ? '#F0F7FF' : 'transparent',
+                                                                cursor: 'pointer'
+                                                            }}
+                                                        >
+                                                            <Box sx={{ flexGrow: 1 }}>
+                                                                <Typography className="text-pro-main">{ben.nom}</Typography>
+                                                                <Typography className="text-pro-sub">{ben.iban}</Typography>
+                                                            </Box>
+                                                        </Box>
+                                                    ))}
+                                                </Box>
+                                            </Box>
                                         )}
-
-                                        <TextField
-                                            fullWidth
-                                            size="medium"
-                                            label="IBAN ou Nom du bénéficiaire"
-                                            placeholder="Ex: FR76..."
-                                            value={destIban}
-                                            onChange={(e) => {
-                                                setDestIban(e.target.value);
-                                                setSelectedBen('');
-                                            }}
-                                            required
-                                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1 } }}
-                                        />
-                                    </Grid>
-
-                                    <Grid item xs={12} sx={{ mt: 2 }}>
-                                        <Divider />
-                                    </Grid>
-
-                                    <Grid item xs={12}>
-                                        <Typography variant="subtitle1" sx={{ color: '#002B5E', fontWeight: 'bold', mb: 2 }}>3. Détails du virement</Typography>
-                                    </Grid>
-
-                                    <Grid item xs={12} sm={6}>
-                                        <TextField
-                                            fullWidth
-                                            size="medium"
-                                            label="Montant"
-                                            type="number"
-                                            placeholder="0.00"
-                                            inputProps={{ min: 0, step: "0.01" }}
-                                            value={montant}
-                                            onChange={(e) => setMontant(e.target.value)}
-                                            required
-                                            InputProps={{
-                                                endAdornment: <InputAdornment position="end">EUR</InputAdornment>
-                                            }}
-                                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1 } }}
-                                        />
-                                    </Grid>
-
-                                    <Grid item xs={12} sm={6}>
-                                        <TextField
-                                            fullWidth
-                                            size="medium"
-                                            label="Motif (optionnel)"
-                                            placeholder="Ex: Loyer"
-                                            value={description}
-                                            onChange={(e) => setDescription(e.target.value)}
-                                            sx={{ '& .MuiOutlinedInput-root': { borderRadius: 1 } }}
-                                        />
-                                    </Grid>
-
-                                    <Grid item xs={12} sx={{ mt: 3, pt: 2, borderTop: '1px solid #E5E5E5', display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                                        <Button
-                                            variant="outlined"
-                                            sx={{ color: '#002B5E', borderColor: '#002B5E', borderRadius: 20, px: 4, textTransform: 'none', fontWeight: 'bold' }}
-                                            onClick={() => {
-                                                setDestIban('');
-                                                setMontant('');
-                                                setDescription('');
-                                            }}
-                                        >
-                                            Annuler
-                                        </Button>
-                                        <Button
-                                            type="submit"
-                                            variant="contained"
-                                            disabled={loading || accounts.length === 0}
-                                            sx={{
-                                                bgcolor: '#E4002B',
-                                                color: 'white',
-                                                borderRadius: 20,
-                                                px: 4,
-                                                py: 1,
-                                                textTransform: 'none',
-                                                fontWeight: 'bold',
-                                                boxShadow: 'none',
-                                                '&:hover': { bgcolor: '#B30022', boxShadow: 'none' }
-                                            }}
-                                        >
-                                            {loading ? 'Traitement...' : 'Valider le virement'}
-                                        </Button>
-                                    </Grid>
-                                </Grid>
-                            </form>
-                        </Box>
-                    </Paper>
-                </Grid>
-
-                {/* RHS Column: Historique des Opérations */}
-                <Grid item xs={12} md={4}>
-                    <Paper elevation={0} sx={{ borderTop: '4px solid #F4F4F4', borderRadius: 0, bgcolor: 'transparent' }}>
-                        <Box sx={{ bgcolor: '#FFFFFF', p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #E5E5E5' }}>
-                            <Typography sx={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#002B5E', textTransform: 'uppercase' }}>
-                                Historique des Opérations
-                            </Typography>
-                        </Box>
-
-                        <Box sx={{ bgcolor: '#FFFFFF', p: 3, maxHeight: '420px', overflowY: 'auto' }}>
-                            {transactions.length === 0 ? (
-                                <Typography sx={{ fontSize: '0.85rem', color: '#666', textAlign: 'center', py: 4 }}>Aucune opération récente sélectionnée.</Typography>
-                            ) : (
-                                transactions.map((tx, idx) => (
-                                    <Box key={idx} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #F0F0F0', py: 1.5 }}>
-                                        <Box>
-                                            <Typography sx={{ fontSize: '0.75rem', color: '#888', mb: 0.2 }}>
-                                                {new Date(tx.date_transaction).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                            </Typography>
-                                            <Typography sx={{ fontSize: '0.9rem', color: '#333', fontWeight: 500 }}>
-                                                {tx.libelle || tx.description}
-                                            </Typography>
-                                        </Box>
-                                        <Typography sx={{ fontWeight: 'bold', fontSize: '1rem', color: parseFloat(tx.montant) < 0 ? '#333' : '#008033' }}>
-                                            {parseFloat(tx.montant) > 0 ? '+' : ''}{parseFloat(tx.montant).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €
-                                        </Typography>
                                     </Box>
-                                ))
-                            )}
-                        </Box>
-                    </Paper>
+                                )}
 
-                    <Paper elevation={0} sx={{ borderTop: '4px solid #F4F4F4', borderRadius: 0, bgcolor: 'transparent', mt: 4 }}>
-                        <Box sx={{ bgcolor: '#FFFFFF', p: 2, borderBottom: '1px solid #E5E5E5' }}>
-                            <Typography sx={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#002B5E', textTransform: 'uppercase' }}>
-                                Informations
-                            </Typography>
-                        </Box>
-                        <Box sx={{ bgcolor: '#FFFFFF', p: 3 }}>
-                            <Typography sx={{ fontSize: '0.85rem', color: '#666', mb: 2 }}>
-                                Les virements SEPA classiques vers d'autres banques sont exécutés sous 1 à 2 jours ouvrés.
-                            </Typography>
-                            <Typography sx={{ fontSize: '0.85rem', color: '#666' }}>
-                                Pour les virements instantanés, la somme est disponible en 10 secondes sur le compte du bénéficiaire.
-                            </Typography>
+                                {activeStep === 2 && (
+                                    <Box>
+                                        <Typography sx={{ fontWeight: 800, mb: 3 }}>Montant et Détails</Typography>
+                                        <Grid container spacing={3}>
+                                            <Grid item xs={12}>
+                                                <TextField
+                                                    fullWidth
+                                                    label="Montant du transfert"
+                                                    type="number"
+                                                    value={montant}
+                                                    onChange={(e) => setMontant(e.target.value)}
+                                                    InputProps={{
+                                                        endAdornment: <InputAdornment position="end">EUR</InputAdornment>,
+                                                        sx: { fontSize: '1.5rem', fontWeight: 800, p: 1 }
+                                                    }}
+                                                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '16px', bgcolor: '#F8FAFC' } }}
+                                                />
+                                            </Grid>
+                                            <Grid item xs={12}>
+                                                <TextField
+                                                    fullWidth
+                                                    label="Libellé du virement"
+                                                    placeholder="Loyer, Remboursement, etc."
+                                                    value={description}
+                                                    onChange={(e) => setDescription(e.target.value)}
+                                                    sx={{ '& .MuiOutlinedInput-root': { borderRadius: '12px' } }}
+                                                />
+                                            </Grid>
+                                        </Grid>
+                                    </Box>
+                                )}
+
+                                {/* Navigation Buttons */}
+                                <Box sx={{ mt: 5, pt: 3, borderTop: '1px solid var(--iris-border)', display: 'flex', justifyContent: 'space-between' }}>
+                                    <Button
+                                        onClick={() => setActiveStep(prev => prev - 1)}
+                                        disabled={activeStep === 0}
+                                        startIcon={<ArrowBack />}
+                                        sx={{ textTransform: 'none', fontWeight: 700, color: 'var(--iris-text-light)' }}
+                                    >
+                                        Retour
+                                    </Button>
+                                    
+                                    {activeStep < 2 ? (
+                                        <Button
+                                            variant="contained"
+                                            onClick={() => setActiveStep(prev => prev + 1)}
+                                            disabled={activeStep === 0 ? !sourceId : !destIban}
+                                            endIcon={<ArrowForward />}
+                                            sx={{ bgcolor: 'var(--iris-blue)', px: 4, borderRadius: '12px', textTransform: 'none', fontWeight: 700 }}
+                                        >
+                                            Suivant
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            variant="contained"
+                                            onClick={handleTransfer}
+                                            disabled={loading || !montant}
+                                            startIcon={loading ? null : <CheckCircle />}
+                                            sx={{ bgcolor: 'var(--iris-blue-dark)', px: 4, borderRadius: '12px', textTransform: 'none', fontWeight: 700 }}
+                                        >
+                                            {loading ? 'Traitement...' : 'Confirmer le virement'}
+                                        </Button>
+                                    )}
+                                </Box>
+                            </Box>
                         </Box>
                     </Paper>
                 </Grid>
             </Grid>
-        </Container>
+
+        </Box>
     );
 }

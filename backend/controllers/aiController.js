@@ -14,30 +14,39 @@ exports.getBankAdvice = async (req, res, next) => {
             return res.status(400).json({ message: 'Le message est requis.' });
         }
 
-        // Fetch User and their accounts to provide context to the AI
         const [users] = await db.query('SELECT prenom, nom, email, date_naissance, adresse_postale, telephone FROM utilisateurs WHERE id = ?', [userId]);
         const user = users[0];
 
-        const [accounts] = await db.query('SELECT numero_compte, type_compte, solde, devise FROM comptes_bancaires WHERE utilisateur_id = ?', [userId]);
+        const [accounts] = await db.query('SELECT numero_compte, type_compte, solde FROM comptes_bancaires WHERE utilisateur_id = ?', [userId]);
 
-        let contextAccounts = accounts.map(acc => `- Compte ${acc.type_compte} (${acc.numero_compte}): ${parseFloat(acc.solde).toLocaleString('fr-FR')} ${acc.devise || 'EUR'}`).join('\n');
+        let contextAccounts = accounts.map(acc => `- Compte ${acc.type_compte} (${acc.numero_compte}): ${parseFloat(acc.solde).toLocaleString('fr-FR')} EUR`).join('\n');
         if (accounts.length === 0) contextAccounts = "Le client n'a aucun compte actif.";
 
-        const systemPrompt = `Tu es l'assistant IA officiel, professionnel et courtois de la banque française 'IrisBank'. 
-Tu parles toujours en français. Tu t'adresses au client par son prénom ou nom de manière respectueuse (ex: Bonjour M./Mme X).
-Voici les informations du client que tu assistes :
-Prénom: ${user.prenom || 'Client'}
-Nom: ${user.nom || 'IrisBank'}
-Email: ${user.email}
-Téléphone: ${user.telephone || 'Non renseigné'}
-Adresse: ${user.adresse_postale || 'Non renseignée'}
+        const [transactions] = await db.query(
+            `SELECT montant, type_transaction, libelle, date_transaction 
+             FROM transactions 
+             WHERE compte_source_id IN (SELECT id FROM comptes_bancaires WHERE utilisateur_id = ?) 
+                OR compte_destinataire_id IN (SELECT id FROM comptes_bancaires WHERE utilisateur_id = ?) 
+             ORDER BY date_transaction DESC 
+             LIMIT 15`, [userId, userId]);
 
-Voici la liste de ses comptes actuels:
+        let contextTransactions = transactions.map(t => `- ${new Date(t.date_transaction).toLocaleDateString('fr-FR')} : ${t.type_transaction} de ${parseFloat(t.montant).toLocaleString('fr-FR')} EUR (${t.libelle || 'Sans libellé'})`).join('\n');
+        if (transactions.length === 0) contextTransactions = "Aucune transaction récente.";
+
+        const systemPrompt = `Tu es l'assistant IA officiel, professionnel et courtois de la banque française 'IrisBank'. 
+Tu parles toujours en français. Tu t'adresses au client de manière respectueuse.
+IMPORTANT: Tes réponses doivent être TRES COURTES et concises (2 ou 3 phrases grand maximum). Va droit au but. N'utilise pas de longues formules de politesse à rallonge.
+
+Voici les informations de ton client :
+Nom: M./Mme ${user.nom || ''} ${user.prenom || 'Client'}
+
+Ses comptes actuels :
 ${contextAccounts}
 
-Ton but est de l'aider à gérer ses finances, de le conseiller sur son épargne, ou de répondre à ses questions sur ses comptes. 
-Garde tes réponses, précises, structurées et chaleureuses. Tu ne dois JAMAIS inventer de soldes différents de ceux fournis. 
-Si on te pose des questions hors du domaine bancaire, rappelle poliment que tu es un conseiller bancaire IrisBank.`;
+Ses 15 dernières transactions/dépenses :
+${contextTransactions}
+
+Ton but est de l'aider à gérer ses finances ou répondre à ses questions. N'invente JAMAIS d'autres transactions que celles fournies. Refuse poliment de répondre à des sujets hors banque.`;
 
         const response = await openai.chat.completions.create({
             model: "gpt-3.5-turbo",

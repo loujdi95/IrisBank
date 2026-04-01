@@ -7,28 +7,37 @@ import {
     Typography,
     IconButton,
     useTheme,
-    useMediaQuery
+    useMediaQuery,
+    Divider,
+    Container
 } from '@mui/material';
-import {
-    Search,
-    PowerSettingsNew,
-    WarningAmber,
-    Close,
-    ExpandMore,
-    HomeOutlined
-} from '@mui/icons-material';
+import { Search, PowerSettingsNew, WarningAmber, Close, ExpandMore, HomeOutlined } from '@mui/icons-material';
+import axios from 'axios';
 
 export default function DashboardLayout({ children }) {
     const [user, setUser] = useState(null);
+    const [advisor, setAdvisor] = useState(null);
     const [showAlert, setShowAlert] = useState(true);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const navigate = useNavigate();
+    const location = useLocation();
 
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
         if (storedUser) setUser(JSON.parse(storedUser));
+        fetchAdvisor();
     }, []);
+
+    const fetchAdvisor = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.get('http://localhost:5000/api/messages/advisor', { headers: { Authorization: `Bearer ${token}` } });
+            setAdvisor(res.data);
+        } catch (error) {
+            console.error('Advisor fetch error:', error);
+        }
+    };
 
     const handleLogout = () => {
         localStorage.removeItem('token');
@@ -39,9 +48,11 @@ export default function DashboardLayout({ children }) {
     const navLinks = [
         { text: 'Situation', path: '/dashboard' },
         { text: 'Comptes', path: '/comptes' },
-        { text: 'Opérations', path: '/virements' },
+        { text: 'Opérations', path: '/operations' },
+        { text: 'Virements', path: '/virements' },
+        { text: 'Messagerie', path: '/messagerie' },
         { text: 'Services', path: '/cartes' },
-        { text: 'Profil', path: '/profile' },
+        { text: 'Profil et Sécurité', path: '/profile' },
         { text: 'Simulations', path: '/simulations' }
     ];
 
@@ -50,14 +61,16 @@ export default function DashboardLayout({ children }) {
     }
 
     return (
-        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: '#F4F4F4' }}>
-            {/* Top Corporate Header - very subtle, usually present in CM */}
-            <Box sx={{ height: '30px', bgcolor: 'white', borderBottom: '1px solid #E5E5E5', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', px: 3 }}>
-                <Typography variant="caption" sx={{ color: '#333', mx: 2, fontWeight: 'bold', cursor: 'pointer' }}>Site institutionnel</Typography>
-                <Typography variant="caption" sx={{ color: '#333', mx: 2, fontWeight: 'bold', cursor: 'pointer' }}>Centre d'aide</Typography>
-                <Typography variant="caption" sx={{ color: '#333', mx: 2, fontWeight: 'bold', cursor: 'pointer' }}>FR <ExpandMore sx={{ fontSize: '1rem', verticalAlign: 'middle' }} /></Typography>
-                <Box sx={{ bgcolor: '#002B5E', color: 'white', px: 2, py: 0.5, height: '100%', display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-                    <Typography variant="caption" sx={{ fontWeight: 'bold' }}>Nos offres</Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'var(--iris-bg)' }}>
+            {/* Top Corporate Header */}
+            <Box sx={{ height: '36px', bgcolor: 'white', borderBottom: '1px solid var(--iris-border)', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', px: 4 }}>
+                <Typography variant="caption" sx={{ color: 'var(--iris-text-light)', mx: 2, fontWeight: 600, cursor: 'pointer', '&:hover': { color: 'var(--iris-blue)' } }}>Site institutionnel</Typography>
+                <Typography variant="caption" sx={{ color: 'var(--iris-text-light)', mx: 2, fontWeight: 600, cursor: 'pointer', '&:hover': { color: 'var(--iris-blue)' } }}>Centre d'aide</Typography>
+                <Typography variant="caption" sx={{ color: 'var(--iris-text)', mx: 2, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    FR <ExpandMore sx={{ fontSize: '1rem' }} />
+                </Typography>
+                <Box sx={{ bgcolor: 'var(--iris-blue)', color: 'white', px: 3, height: '100%', display: 'flex', alignItems: 'center', cursor: 'pointer', ml: 2, '&:hover': { bgcolor: 'var(--iris-blue-dark)' } }}>
+                    <Typography variant="caption" sx={{ fontWeight: 700, letterSpacing: '0.02em' }}>NOS OFFRES</Typography>
                 </Box>
             </Box>
 
@@ -67,34 +80,40 @@ export default function DashboardLayout({ children }) {
                 elevation={0}
                 sx={{
                     bgcolor: '#FFFFFF',
-                    borderBottom: '1px solid #E0E4E8',
-                    color: '#333'
+                    borderBottom: '1px solid var(--iris-border)',
+                    color: 'var(--iris-text)'
                 }}
             >
-                <Toolbar sx={{ justifyContent: 'space-between', minHeight: '80px !important', px: { xs: 2, md: 4 } }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, md: 1, lg: 3 } }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer', gap: 1 }} onClick={() => navigate('/dashboard')}>
-                            <img src="/logo.png" alt="IrisBank Logo" style={{ height: '60px', objectFit: 'contain', transform: 'scale(1.8)', transformOrigin: 'left center', mixBlendMode: 'multiply', marginLeft: '10px', marginRight: '80px' }} />
+                <Toolbar sx={{ justifyContent: 'space-between', minHeight: '88px !important', px: { xs: 2, md: 4 } }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => navigate('/dashboard')}>
+                            <img src="/logo.png" alt="IrisBank Logo" style={{ height: '54px', objectFit: 'contain' }} />
                         </Box>
 
-                        <IconButton onClick={() => navigate('/dashboard')} sx={{ color: '#333' }}>
+                        <Divider orientation="vertical" flexItem sx={{ height: 32, my: 'auto', mx: 1, borderColor: 'var(--iris-border)' }} />
+
+                        <IconButton onClick={() => navigate('/dashboard')} sx={{ color: 'var(--iris-text-light)', '&:hover': { color: 'var(--iris-blue)', bgcolor: 'var(--iris-blue-light)' } }}>
                             <HomeOutlined />
                         </IconButton>
 
                         {!isMobile && (
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: { md: 1, lg: 2 }, overflowX: 'auto', '&::-webkit-scrollbar': { display: 'none' } }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 {navLinks.map((link, index) => (
                                     <Box
                                         key={index}
                                         sx={{
-                                            display: 'flex',
-                                            alignItems: 'center',
+                                            px: 2,
+                                            py: 1,
+                                            borderRadius: '8px',
                                             cursor: 'pointer',
-                                            '&:hover': { color: '#002B5E' }
+                                            transition: 'all 0.2s',
+                                            color: location.pathname === link.path ? 'var(--iris-blue)' : 'var(--iris-text-light)',
+                                            bgcolor: location.pathname === link.path ? 'var(--iris-blue-light)' : 'transparent',
+                                            '&:hover': { color: 'var(--iris-blue)', bgcolor: 'var(--iris-blue-light)' }
                                         }}
                                         onClick={() => link.path && navigate(link.path)}
                                     >
-                                        <Typography sx={{ fontWeight: 400, fontSize: '0.95rem', whiteSpace: 'nowrap' }}>
+                                        <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', whiteSpace: 'nowrap' }}>
                                             {link.text}
                                         </Typography>
                                     </Box>
@@ -103,65 +122,68 @@ export default function DashboardLayout({ children }) {
                         )}
                     </Box>
 
-                    {/* Spacer to push actions to the right and prevent sticking */}
-                    <Box sx={{ flexGrow: 1, minWidth: '24px' }} />
-
-                    {/* Right: Actions & Logout */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Box sx={{ p: 1, border: '1px solid #E5E5E5', borderRadius: '50%', display: 'flex', cursor: 'pointer', '&:hover': { bgcolor: '#F9F9F9' } }}>
-                            <Search sx={{ color: '#333' }} />
-                        </Box>
-
-                        <Box sx={{ textAlign: 'right', display: { xs: 'none', md: 'block' }, mr: 2 }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1 }}>
-                                <Typography variant="caption" sx={{ color: '#666' }}>Votre conseiller</Typography>
-                                <Box sx={{ bgcolor: '#D3002D', color: 'white', borderRadius: '50%', width: 18, height: 18, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '10px', fontWeight: 'bold' }}>
-                                    2
+                    {/* Right Actions */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                        {!isMobile && (
+                            <Box sx={{ textAlign: 'right' }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 1, mb: 0.5 }}>
+                                    <Typography variant="caption" sx={{ color: 'var(--iris-text-light)', fontWeight: 500 }}>Conseiller</Typography>
+                                    <Box sx={{ bgcolor: 'var(--iris-red)', color: 'white', borderRadius: '4px', px: 0.8, py: 0.2, fontSize: '10px', fontWeight: 800 }}>
+                                        0
+                                    </Box>
                                 </Box>
+                                <Typography 
+                                    variant="body2" 
+                                    onClick={() => navigate('/messagerie')}
+                                    sx={{ fontWeight: 700, color: 'var(--iris-text)', display: 'flex', alignItems: 'center', gap: 0.5, cursor: 'pointer', '&:hover': { color: 'var(--iris-blue)' } }}
+                                >
+                                    {advisor ? `${advisor.prenom} ${advisor.nom}` : 'Chargement...'}
+                                    <ExpandMore sx={{ fontSize: '1.1rem', color: 'var(--iris-text-light)' }} />
+                                </Typography>
                             </Box>
-                            <Typography variant="body2" sx={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: 0.5, cursor: 'pointer' }}>
-                                M. {user?.prenom?.toUpperCase() || 'VINCENT'} {user?.nom?.toUpperCase() || 'DEPEAUX'}
-                                <ExpandMore sx={{ fontSize: '1rem', color: '#666' }} />
-                            </Typography>
-                        </Box>
+                        )}
 
-                        {/* Distinctive Déconnexion Button from Screenshot */}
+                        <Box sx={{ width: '1px', height: '40px', bgcolor: 'var(--iris-border)', display: { xs: 'none', md: 'block' } }} />
+
                         <Box
                             onClick={handleLogout}
                             sx={{
                                 display: 'flex',
-                                flexDirection: 'column',
                                 alignItems: 'center',
+                                gap: 1.5,
                                 cursor: 'pointer',
-                                padding: '10px 15px',
-                                '&:hover': { bgcolor: '#F9F9F9' },
-                                borderLeft: '1px solid #E5E5E5'
+                                px: 2,
+                                py: 1,
+                                borderRadius: '10px',
+                                transition: 'all 0.2s',
+                                '&:hover': { bgcolor: '#FEF2F2', '& .logout-icon': { color: 'var(--iris-red)' }, '& .logout-text': { color: 'var(--iris-red)' } }
                             }}
                         >
-                            <Box sx={{ width: 44, height: 44, borderRadius: '50%', border: '2px solid #E5E5E5', display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 0.5 }}>
-                                <PowerSettingsNew sx={{ color: '#002B5E', fontSize: '1.5rem' }} />
-                            </Box>
-                            <Typography sx={{ color: '#002B5E', fontWeight: 'bold', fontSize: '12px' }}>
-                                Déconnexion
-                            </Typography>
+                            <PowerSettingsNew className="logout-icon" sx={{ color: 'var(--iris-text-light)', fontSize: '1.4rem' }} />
+                            {!isMobile && (
+                                <Typography className="logout-text" sx={{ color: 'var(--iris-text)', fontWeight: 700, fontSize: '0.9rem' }}>
+                                    Quitter
+                                </Typography>
+                            )}
                         </Box>
-
                     </Box>
                 </Toolbar>
             </AppBar>
 
             {/* Warning Banner */}
             {showAlert && (
-                <Box sx={{ bgcolor: '#FAD99E', py: 1.5, px: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <WarningAmber sx={{ color: '#553300' }} />
-                        <Typography sx={{ color: '#333', fontSize: '14px' }}>
-                            Nos services seront indisponibles du 8 mars 2026 à 00:00 au 8 mars 2026 à 06:00.
-                        </Typography>
-                    </Box>
-                    <IconButton size="small" onClick={() => setShowAlert(false)}>
-                        <Close sx={{ fontSize: '1.2rem', color: '#333' }} />
-                    </IconButton>
+                <Box sx={{ bgcolor: '#FFFBEB', py: 1.5, px: 3, borderBottom: '1px solid #FEF3C7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Container maxWidth="lg" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <WarningAmber sx={{ color: '#D97706', fontSize: '1.2rem' }} />
+                            <Typography sx={{ color: '#92400E', fontSize: '14px', fontWeight: 500 }}>
+                                Maintenance prévue le 8 mars 2026 de 00:00 à 06:00. Certains services seront indisponibles.
+                            </Typography>
+                        </Box>
+                        <IconButton size="small" onClick={() => setShowAlert(false)} sx={{ color: '#D97706' }}>
+                            <Close sx={{ fontSize: '1.1rem' }} />
+                        </IconButton>
+                    </Container>
                 </Box>
             )}
 
@@ -170,8 +192,8 @@ export default function DashboardLayout({ children }) {
                 component="main"
                 sx={{
                     flexGrow: 1,
-                    p: { xs: 2, md: 4 },
-                    maxWidth: '1400px',
+                    p: { xs: 2, md: 4, lg: 6 },
+                    maxWidth: '1440px',
                     margin: '0 auto',
                     width: '100%'
                 }}
@@ -179,5 +201,6 @@ export default function DashboardLayout({ children }) {
                 {children || <Outlet />}
             </Box>
         </Box>
+
     );
 }

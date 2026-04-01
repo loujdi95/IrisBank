@@ -7,7 +7,13 @@ import Comptes from './pages/Comptes';
 import Virements from './pages/Virements';
 import Cartes from './pages/Cartes';
 import Simulations from './pages/Simulations';
+<<<<<<< HEAD
 import Admin from './pages/Admin';
+=======
+import Operations from './pages/Operations';
+import Messagerie from './pages/Messagerie';
+import CardDetails from './pages/CardDetails';
+>>>>>>> eff4c23 (Update IrisBank: add AI features and Operations page)
 import Chatbot from './components/Chatbot';
 import DashboardLayout from './components/DashboardLayout';
 
@@ -33,7 +39,10 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/comptes" element={<Comptes />} />
             <Route path="/virements" element={<Virements />} />
+            <Route path="/operations" element={<Operations />} />
+            <Route path="/messagerie" element={<Messagerie />} />
             <Route path="/cartes" element={<Cartes />} />
+            <Route path="/cartes/:id" element={<CardDetails />} />
             <Route path="/simulations" element={<Simulations />} />
             <Route path="/admin" element={<Admin />} />
           </Route>

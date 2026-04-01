@@ -34,6 +34,8 @@ app.use('/api/accounts', require('./routes/accountRoutes'));
 app.use('/api/transactions', require('./routes/transactionRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes'));
+app.use('/api/messages', require('./routes/messageRoutes'));
+app.use('/api/cards', require('./routes/cardRoutes'));
 
 // Test Route
 app.get('/', (req, res) => {

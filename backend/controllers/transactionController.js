@@ -50,7 +50,7 @@ const createTransfer = async (req, res) => {
 
         // 4. Enregistrer la transaction
         await connection.execute(
-            'INSERT INTO transactions (compte_source_id, compte_destinataire_id, type_transaction, montant, libelle) VALUES (?, ?, "virement emis", ?, ?)',
+            'INSERT INTO transactions (compte_source_id, compte_destinataire_id, type_transaction, montant, libelle) VALUES (?, ?, \'virement emis\', ?, ?)',
             [sourceAcc.id, destAcc.id, montant, description || 'Virement']
         );
 
@@ -92,7 +92,7 @@ const depositFunds = async (req, res) => {
         );
 
         await pool.execute(
-            'INSERT INTO transactions (compte_destinataire_id, type_transaction, montant, libelle) VALUES (?, "depot", ?, "Dépôt initial / externe")',
+            'INSERT INTO transactions (compte_destinataire_id, type_transaction, montant, libelle) VALUES (?, \'depot\', ?, \'Dépôt initial / externe\')',
             [accountId, montant]
         );
 

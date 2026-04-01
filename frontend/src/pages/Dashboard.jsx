@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Box, Typography, Paper, Grid, Divider, Button, IconButton, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
-import { Menu as MenuIcon, AddCircleOutline, InsertDriveFile, PictureAsPdf, Download, ArrowForward } from '@mui/icons-material';
+import { Box, Typography, Paper, Grid, Divider, Button, IconButton, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Select, MenuItem, FormControl, InputLabel, Link } from '@mui/material';
+import { Menu as MenuIcon, AddCircleOutline, InsertDriveFile, PictureAsPdf, Download, ArrowForward, HelpOutline } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
@@ -229,259 +229,179 @@ export default function Dashboard() {
     };
 
     return (
-        <Box sx={{ pb: 8 }}>
-            {/* User Header */}
-            <Box sx={{ mb: 4 }}>
-                <Typography variant="h5" sx={{ textTransform: 'uppercase', color: '#333', mb: 0.5, fontSize: '1.4rem', fontWeight: 400 }}>
-                    {user?.nom || 'CHEKROUN'} {user?.prenom || 'RAYANE'}, votre espace client
-                </Typography>
-                <Typography variant="body2" sx={{ color: '#333', mb: 2 }}>
-                    Dernière connexion le {formattedDate} à {formattedTime}.
-                </Typography>
+        <Box sx={{ pb: 12 }}>
+            {/* User Header Section */}
+            <Box sx={{ mb: 6, display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'flex-end' }, gap: 3 }}>
+                <Box>
+                    <Typography variant="h4" sx={{ color: 'var(--iris-blue)', fontWeight: 800, mb: 1, letterSpacing: '-0.02em' }}>
+                        Bonjour {user?.prenom || 'Rayane'}
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: 'var(--iris-text-light)', fontWeight: 500 }}>
+                        Dernière connexion le {formattedDate} à {formattedTime}
+                    </Typography>
+                </Box>
 
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                    <Box sx={{ bgcolor: '#002B5E', color: 'white', px: 2, py: 0.5, borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', cursor: 'pointer' }}>
+                <Box sx={{ display: 'flex', gap: 1.5 }}>
+                    <Button 
+                        variant="contained" 
+                        size="small"
+                        sx={{ 
+                            bgcolor: 'var(--iris-blue-dark)', 
+                            borderRadius: '20px', 
+                            fontSize: '0.75rem', 
+                            px: 3,
+                            '&:hover': { bgcolor: 'var(--iris-blue)' }
+                        }}
+                    >
                         AGORA Sociétaires
-                    </Box>
-                    <Box sx={{ bgcolor: '#002B5E', color: 'white', px: 2, py: 0.5, borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', cursor: 'pointer' }}>
-                        Sociétaires
-                    </Box>
+                    </Button>
+                    <Button 
+                        variant="outlined" 
+                        size="small"
+                        onClick={() => navigate('/messagerie')}
+                        sx={{ 
+                            borderColor: 'var(--iris-border)', 
+                            color: 'var(--iris-text)',
+                            borderRadius: '20px', 
+                            fontSize: '0.75rem', 
+                            px: 3,
+                            '&:hover': { borderColor: 'var(--iris-blue)', color: 'var(--iris-blue)' }
+                        }}
+                    >
+                        Ma Messagerie
+                    </Button>
                 </Box>
             </Box>
 
-            {/* 3 Column Layout */}
-            <Grid container spacing={3}>
-                {/* Column 1: Situation */}
-                <Grid item xs={12} md={4}>
-                    <Paper elevation={0} sx={{ borderTop: '4px solid #F4F4F4', borderRadius: 0, bgcolor: 'transparent' }}>
-                        <Box sx={{ bgcolor: '#FFFFFF', p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Typography sx={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#002B5E' }}>Situation</Typography>
-                        </Box>
-
-                        <Box sx={{ bgcolor: '#FFFFFF', p: 2, mt: 0.5 }}>
-                            {accounts.map((acc, index) => (
-                                <Box key={acc.id} sx={{ display: 'flex', justifyContent: 'space-between', mb: index === accounts.length - 1 ? 0 : 3 }}>
-                                    <Box>
-                                        <Typography sx={{ fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase', color: '#333' }}>
-                                            {acc.type_compte === 'courant' ? 'C/C EUROCOMPTE' : acc.type_compte === 'epargne' ? 'LIVRET BLEU' : acc.type_compte}
-                                        </Typography>
-                                        <Typography sx={{ fontSize: '0.85rem', textTransform: 'uppercase' }}>
-                                            M {user?.prenom} {user?.nom}
-                                        </Typography>
-                                        <Typography sx={{ fontSize: '0.85rem', color: '#666' }}>
-                                            {acc.numero_compte}
-                                        </Typography>
+            {/* Account Grid */}
+            <Grid container spacing={4}>
+                {accounts.map((acc) => {
+                    const txs = accountTransactions[acc.id] || [];
+                    const isCourant = acc.type_compte === 'courant';
+                    const isEpargne = acc.type_compte === 'livret A' || acc.type_compte === 'epargne';
+                    
+                    return (
+                        <Grid item xs={12} md={6} lg={6} key={acc.id}>
+                            <Paper elevation={0} className="premium-card" sx={{ height: '100%', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)' } }}>
+                                {/* Card Header */}
+                                <Box sx={{ p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--iris-border)' }}>
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <Box className={`account-indicator ${isCourant ? 'indicator-courant' : isEpargne ? 'indicator-epargne' : 'indicator-pel'}`} />
+                                        <Box>
+                                            <Typography sx={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--iris-blue)', textTransform: 'uppercase', mb: 0.5, letterSpacing: '0.05em' }}>
+                                                {acc.type_compte === 'courant' ? 'CB Visa Premier' : acc.type_compte === 'livret A' || acc.type_compte === 'epargne' ? 'Livret d\'Épargne' : acc.type_compte}
+                                            </Typography>
+                                            <Typography variant="h6" sx={{ fontWeight: 800, color: 'var(--iris-text)', mb: 0.5 }}>
+                                                {isCourant ? 'Eurocompte Jeune' : 'Livret Bleu'}
+                                            </Typography>
+                                            <Typography sx={{ fontSize: '0.75rem', color: 'var(--iris-text-light)', fontFamily: 'monospace', letterSpacing: '0.1em' }}>
+                                                {acc.numero_compte}
+                                            </Typography>
+                                        </Box>
                                     </Box>
-                                    <Box sx={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center' }}>
-                                        <MenuIcon sx={{ color: '#333', mb: 1 }} />
+                                    <IconButton size="small" sx={{ color: 'var(--iris-text-light)', bgcolor: '#F8FAFC' }}>
+                                        <MenuIcon sx={{ fontSize: '1.2rem' }} />
+                                    </IconButton>
+                                </Box>
+
+                                {/* Balance Area */}
+                                <Box sx={{ p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', bgcolor: '#FAFBFC' }}>
+                                    <Box>
+                                        <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--iris-text-light)', mb: 1 }}>Solde disponible</Typography>
                                         <FormatCurrency amount={acc.solde} />
                                     </Box>
-                                </Box>
-                            ))}
-                            {loading && <Typography>Chargement...</Typography>}
-                        </Box>
-                    </Paper>
-                </Grid>
-
-                {/* Column 2: Account 1 Details */}
-                <Grid item xs={12} md={4}>
-                    {account1 && (
-                        <Paper elevation={0} sx={{ borderTop: '4px solid #F4F4F4', borderRadius: 0, bgcolor: 'transparent' }}>
-                            <Box sx={{ bgcolor: '#FFFFFF', p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Typography sx={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#002B5E', textTransform: 'uppercase' }}>
-                                    {account1.type_compte === 'courant' ? 'C/C EUROCOMPTE JEUNE' : 'COMPTE ' + account1.type_compte}
-                                </Typography>
-                                <MenuIcon sx={{ color: '#333' }} />
-                            </Box>
-
-                            <Box sx={{ bgcolor: '#FFFFFF', mt: 0.5 }}>
-                                <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between' }}>
-                                    <Box>
-                                        <Typography sx={{ fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase', color: '#333' }}>
-                                            M {user?.prenom} {user?.nom}
-                                        </Typography>
-                                        <Typography sx={{ fontSize: '0.85rem', color: '#666' }}>
-                                            {account1.numero_compte}
-                                        </Typography>
-                                    </Box>
-                                    <Box sx={{ alignSelf: 'flex-end' }}>
-                                        <FormatCurrency amount={account1.solde} />
+                                    <Box sx={{ display: 'flex', gap: 1 }}>
+                                        <Button
+                                            variant="white"
+                                            size="small"
+                                            onClick={() => downloadRIB(acc)}
+                                            sx={{ borderRadius: '8px', border: '1px solid var(--iris-border)', px: 2, height: '32px', fontSize: '0.7rem' }}
+                                        >
+                                            RIB
+                                        </Button>
+                                        <Button
+                                            variant="white"
+                                            size="small"
+                                            onClick={() => openExportModal(acc)}
+                                            sx={{ borderRadius: '8px', border: '1px solid var(--iris-border)', px: 2, height: '32px', fontSize: '0.7rem' }}
+                                        >
+                                            RELEVÉ
+                                        </Button>
                                     </Box>
                                 </Box>
 
-                                {/* Action Buttons underneath the balance */}
-                                <Box sx={{ display: 'flex', gap: 1, px: 2, pb: 2, borderBottom: '1px solid #E5E5E5' }}>
-                                    <Button
-                                        variant="outlined"
-                                        size="small"
-                                        onClick={() => downloadRIB(account1)}
-                                        startIcon={<PictureAsPdf />}
-                                        sx={{ borderRadius: 0, textTransform: 'none', color: '#002B5E', borderColor: '#002B5E', '&:hover': { bgcolor: '#F4F4F4' } }}
-                                    >
-                                        Éditer RIB
-                                    </Button>
-                                    <Button
-                                        variant="outlined"
-                                        size="small"
-                                        onClick={() => openExportModal(account1)}
-                                        startIcon={<InsertDriveFile />}
-                                        sx={{ borderRadius: 0, textTransform: 'none', color: '#002B5E', borderColor: '#002B5E', '&:hover': { bgcolor: '#F4F4F4' } }}
-                                    >
-                                        Exporter CSV
-                                    </Button>
-                                    <Button
-                                        variant="text"
-                                        size="small"
-                                        onClick={() => navigate('/virements')}
-                                        endIcon={<ArrowForward />}
-                                        sx={{ ml: 'auto', borderRadius: 0, textTransform: 'none', color: '#002B5E', fontWeight: 'bold', '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' } }}
-                                    >
-                                        Voir plus
-                                    </Button>
-                                </Box>
+                                {/* Transactions Area */}
+                                <Box sx={{ p: 3, flexGrow: 1 }}>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2.5 }}>
+                                        <Typography sx={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--iris-text-light)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                            Dernières opérations
+                                        </Typography>
+                                        <Link 
+                                            component="button" 
+                                            onClick={() => navigate('/operations')} 
+                                            sx={{ fontSize: '0.75rem', color: 'var(--iris-blue)', fontWeight: 700, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}
+                                        >
+                                            Voir tout
+                                        </Link>
+                                    </Box>
 
-                                <Box sx={{ px: 2, py: 1 }}>
-                                    <Typography sx={{ fontSize: '0.85rem', color: '#002B5E', cursor: 'pointer', mb: 2 }}>
-                                        Dernières opérations
-                                    </Typography>
-
-                                    {txs1.map((tx, idx) => (
-                                        <Box key={idx} sx={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #E5E5E5', pb: 1, mb: 1 }}>
-                                            <Box sx={{ width: '70%' }}>
-                                                <Typography sx={{ fontSize: '0.85rem', color: '#666' }}>
-                                                    {new Date(tx.date_transaction).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                                                </Typography>
-                                                <Typography sx={{ fontSize: '0.85rem', textTransform: 'uppercase', lineHeight: 1.2 }}>
-                                                    {tx.description}
-                                                </Typography>
-                                            </Box>
-                                            <Box sx={{ alignSelf: 'flex-end', pb: 0.5 }}>
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                        {txs.map((tx, idx) => (
+                                            <Box key={idx} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                                    <Box>
+                                                        <Typography sx={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--iris-text)', mb: 0.2 }}>
+                                                            {tx.description}
+                                                        </Typography>
+                                                        <Typography sx={{ fontSize: '0.7rem', color: 'var(--iris-text-light)' }}>
+                                                            {new Date(tx.date_transaction).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}
+                                                        </Typography>
+                                                    </Box>
+                                                </Box>
                                                 <FormatCurrency amount={tx.montant} />
                                             </Box>
-                                        </Box>
-                                    ))}
-                                    {txs1.length === 0 && <Typography sx={{ fontSize: '0.85rem', color: '#666' }}>Aucune opération récente</Typography>}
-                                </Box>
-                            </Box>
-                        </Paper>
-                    )}
-                </Grid>
-
-                {/* Column 3: Account 2 Details */}
-                <Grid item xs={12} md={4}>
-                    {account2 && (
-                        <Paper elevation={0} sx={{ borderTop: '4px solid #F4F4F4', borderRadius: 0, bgcolor: 'transparent' }}>
-                            <Box sx={{ bgcolor: '#FFFFFF', p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Typography sx={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#002B5E', textTransform: 'uppercase' }}>
-                                    {account2.type_compte === 'epargne' ? 'LIVRET BLEU' : 'COMPTE ' + account2.type_compte}
-                                </Typography>
-                                <MenuIcon sx={{ color: '#333' }} />
-                            </Box>
-
-                            <Box sx={{ bgcolor: '#FFFFFF', mt: 0.5 }}>
-                                <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between' }}>
-                                    <Box>
-                                        <Typography sx={{ fontSize: '0.85rem', fontWeight: 'bold', textTransform: 'uppercase', color: '#333' }}>
-                                            M {user?.prenom} {user?.nom}
-                                        </Typography>
-                                        <Typography sx={{ fontSize: '0.85rem', color: '#666' }}>
-                                            {account2.numero_compte}
-                                        </Typography>
-                                    </Box>
-                                    <Box sx={{ alignSelf: 'flex-end' }}>
-                                        <FormatCurrency amount={account2.solde} />
+                                        ))}
+                                        {txs.length === 0 && (
+                                            <Typography variant="caption" sx={{ color: 'var(--iris-text-light)', fontStyle: 'italic', textAlign: 'center', py: 2 }}>
+                                                Aucune opération récente
+                                            </Typography>
+                                        )}
                                     </Box>
                                 </Box>
-
-                                {/* Action Buttons underneath the balance */}
-                                <Box sx={{ display: 'flex', gap: 1, px: 2, pb: 2, borderBottom: '1px solid #E5E5E5' }}>
-                                    <Button
-                                        variant="outlined"
-                                        size="small"
-                                        onClick={() => downloadRIB(account2)}
-                                        startIcon={<PictureAsPdf />}
-                                        sx={{ borderRadius: 0, textTransform: 'none', color: '#002B5E', borderColor: '#002B5E', '&:hover': { bgcolor: '#F4F4F4' } }}
-                                    >
-                                        Éditer RIB
-                                    </Button>
-                                    <Button
-                                        variant="outlined"
-                                        size="small"
-                                        onClick={() => openExportModal(account2)}
-                                        startIcon={<InsertDriveFile />}
-                                        sx={{ borderRadius: 0, textTransform: 'none', color: '#002B5E', borderColor: '#002B5E', '&:hover': { bgcolor: '#F4F4F4' } }}
-                                    >
-                                        Exporter CSV
-                                    </Button>
-                                    <Button
-                                        variant="text"
-                                        size="small"
-                                        onClick={() => navigate('/virements')}
-                                        endIcon={<ArrowForward />}
-                                        sx={{ ml: 'auto', borderRadius: 0, textTransform: 'none', color: '#002B5E', fontWeight: 'bold', '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' } }}
-                                    >
-                                        Voir plus
-                                    </Button>
-                                </Box>
-
-                                <Box sx={{ px: 2, py: 1 }}>
-                                    <Typography sx={{ fontSize: '0.85rem', color: '#002B5E', cursor: 'pointer', mb: 2 }}>
-                                        Dernières opérations
-                                    </Typography>
-
-                                    {txs2.map((tx, idx) => (
-                                        <Box key={idx} sx={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #E5E5E5', pb: 1, mb: 1 }}>
-                                            <Box sx={{ width: '70%' }}>
-                                                <Typography sx={{ fontSize: '0.85rem', color: '#666' }}>
-                                                    {new Date(tx.date_transaction).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                                                </Typography>
-                                                <Typography sx={{ fontSize: '0.85rem', textTransform: 'uppercase', lineHeight: 1.2 }}>
-                                                    {tx.description}
-                                                </Typography>
-                                            </Box>
-                                            <Box sx={{ alignSelf: 'flex-end', pb: 0.5 }}>
-                                                <FormatCurrency amount={tx.montant} />
-                                            </Box>
-                                        </Box>
-                                    ))}
-                                    {txs2.length === 0 && <Typography sx={{ fontSize: '0.85rem', color: '#666' }}>Aucune opération récente</Typography>}
-                                </Box>
-                            </Box>
-                        </Paper>
-                    )}
-                </Grid>
+                            </Paper>
+                        </Grid>
+                    );
+                })}
             </Grid>
 
-            {/* The side sticky buttons on the right side of the screen */}
-            <Box sx={{ position: 'fixed', right: 0, top: '40%', transform: 'translateY(-50%)', display: 'flex', flexDirection: 'column', gap: 0 }}>
-                <Box sx={{ bgcolor: '#EAF0F6', p: 1.5, borderTopLeftRadius: '8px', borderRight: '1px solid #EAF0F6', borderBottom: '1px solid #D0DCE5', cursor: 'pointer' }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="#002B5E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M16 11.23V11.5C16 12.56 15.58 13.58 14.83 14.33C14.08 15.08 13.06 15.5 12 15.5L8 15.5" stroke="#002B5E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M10 13.5L8 15.5L10 17.5" stroke="#002B5E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M8 12V11C8 9.89543 8.89543 9 10 9H14C15.1046 9 16 9.89543 16 11V12" stroke="#002B5E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                </Box>
-                <Box sx={{ bgcolor: '#EAF0F6', p: 1.5, borderBottomLeftRadius: '8px', cursor: 'pointer', borderTop: '1px solid white' }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M21 11.5C21.0034 12.8199 20.6951 14.1219 20.1 15.3C19.3944 16.7118 18.3098 17.8992 16.9674 18.7293C15.6251 19.5594 14.0782 19.9994 12.5 20C11.1801 20.0035 9.87812 19.6951 8.7 19.1L3 21L4.9 15.3C4.30493 14.1219 3.99656 12.8199 4 11.5C4.00061 9.92179 4.44061 8.37488 5.27072 7.03258C6.10083 5.69028 7.28825 4.6056 8.7 3.90003C9.87812 3.30496 11.1801 2.99659 12.5 3.00003H13C15.0843 3.11502 17.053 3.99479 18.5291 5.47089C20.0052 6.94699 20.885 8.91568 21 11V11.5Z" stroke="#002B5E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M8 12H8.01" stroke="#002B5E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M12 12H12.01" stroke="#002B5E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        <path d="M16 12H16.01" stroke="#002B5E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                </Box>
+            {/* Quick Action Sidebar */}
+            <Box sx={{ position: 'fixed', right: 24, bottom: 24, display: 'flex', flexDirection: 'column', gap: 2, zIndex: 1000 }}>
+                <Tooltip title="Besoin d'aide ?" placement="left">
+                    <IconButton 
+                        sx={{ 
+                            bgcolor: 'var(--iris-blue)', 
+                            color: 'white', 
+                            boxShadow: '0 4px 12px rgba(0,51,153,0.3)',
+                            '&:hover': { bgcolor: 'var(--iris-blue-dark)' }
+                        }}
+                    >
+                        <HelpOutline />
+                    </IconButton>
+                </Tooltip>
             </Box>
 
             {/* Export Dialog */}
-            <Dialog open={exportOpen} onClose={() => setExportOpen(false)} maxWidth="xs" fullWidth>
-                <DialogTitle sx={{ bgcolor: '#002B5E', color: 'white', mb: 2 }}>Export de données</DialogTitle>
+            <Dialog open={exportOpen} onClose={() => setExportOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: '16px', p: 1 } }}>
+                <DialogTitle sx={{ fontWeight: 800, color: 'var(--iris-blue)' }}>Exporter mes données</DialogTitle>
                 <DialogContent>
-                    <Typography sx={{ mb: 3 }}>Sélectionnez la période à exporter pour le compte {exportAccount?.type_compte}</Typography>
+                    <Typography variant="body2" sx={{ mb: 3, color: 'var(--iris-text-light)' }}>
+                        Sélectionnez la période souhaitée pour le compte <strong>{exportAccount?.numero_compte}</strong>.
+                    </Typography>
 
                     <FormControl fullWidth sx={{ mb: 2 }}>
                         <InputLabel>Année</InputLabel>
                         <Select value={exportYear} label="Année" onChange={(e) => setExportYear(e.target.value)}>
-                            <MenuItem value="ALL">Depuis 3 ans (Toute l'historique)</MenuItem>
+                            <MenuItem value="ALL">Historique complet (3 ans)</MenuItem>
                             <MenuItem value="2026">2026</MenuItem>
                             <MenuItem value="2025">2025</MenuItem>
                             <MenuItem value="2024">2024</MenuItem>
@@ -492,30 +412,22 @@ export default function Dashboard() {
                     <FormControl fullWidth>
                         <InputLabel>Mois</InputLabel>
                         <Select value={exportMonth} label="Mois" onChange={(e) => setExportMonth(e.target.value)} disabled={exportYear === 'ALL'}>
-                            <MenuItem value="ALL">Tous les mois de l'année</MenuItem>
-                            <MenuItem value="1">Janvier</MenuItem>
-                            <MenuItem value="2">Février</MenuItem>
-                            <MenuItem value="3">Mars</MenuItem>
-                            <MenuItem value="4">Avril</MenuItem>
-                            <MenuItem value="5">Mai</MenuItem>
-                            <MenuItem value="6">Juin</MenuItem>
-                            <MenuItem value="7">Juillet</MenuItem>
-                            <MenuItem value="8">Août</MenuItem>
-                            <MenuItem value="9">Septembre</MenuItem>
-                            <MenuItem value="10">Octobre</MenuItem>
-                            <MenuItem value="11">Novembre</MenuItem>
-                            <MenuItem value="12">Décembre</MenuItem>
+                            <MenuItem value="ALL">Tous les mois</MenuItem>
+                            {[...Array(12)].map((_, i) => (
+                                <MenuItem key={i + 1} value={(i + 1).toString()}>
+                                    {new Date(2026, i).toLocaleString('fr-FR', { month: 'long' })}
+                                </MenuItem>
+                            ))}
                         </Select>
                     </FormControl>
                 </DialogContent>
-                <DialogActions sx={{ p: 2 }}>
-                    <Button onClick={() => setExportOpen(false)} sx={{ color: '#666' }}>Annuler</Button>
-                    <Button onClick={handleExportConfirm} variant="contained" sx={{ bgcolor: '#D3002D', '&:hover': { bgcolor: '#A00022' } }}>
-                        Générer (.csv)
+                <DialogActions sx={{ p: 3, gap: 1 }}>
+                    <Button onClick={() => setExportOpen(false)} sx={{ color: 'var(--iris-text-light)', textTransform: 'none', fontWeight: 600 }}>Annuler</Button>
+                    <Button onClick={handleExportConfirm} variant="contained" sx={{ textTransform: 'none', fontWeight: 700, borderRadius: '8px' }}>
+                        Générer CSV
                     </Button>
                 </DialogActions>
             </Dialog>
-
         </Box>
     );
 }

@@ -1,22 +1,28 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 :root {
-  /* CM-Specific Colors */
-  --color-cm-blue: #002B5E;
+  /* IrisBank Professional Palette */
+  --iris-blue: #003399;
+  --iris-blue-dark: #002266;
+  --iris-blue-light: #EBF4FF;
+  --iris-red: #D3002D;
+  --iris-bg: #F8FAFC;
+  --iris-text: #1E293B;
+  --iris-text-light: #64748B;
+  --iris-border: #E2E8F0;
+  
+  /* Legacy/CM compatibility if needed */
+  --color-cm-blue: #003399;
   --color-cm-red: #D3002D;
-  --color-cm-green: #008000;
-  --color-cm-light: #F4F4F4;
-  --color-cm-text: #333333;
-  --color-cm-border: #E5E5E5;
 }
 
 body {
   margin: 0;
   padding: 0;
-  background-color: var(--color-cm-light);
-  color: var(--color-cm-text);
-  font-family: Arial, Helvetica, sans-serif;
-  /* CM typical font stack */
+  background-color: var(--iris-bg);
+  color: var(--iris-text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -25,25 +31,237 @@ body {
   box-sizing: border-box;
 }
 
-/* Override MUI globals */
+/* --- MUI Global Overrides --- */
 .MuiTypography-root {
-  font-family: Arial, Helvetica, sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
 }
 
-/* Remove all generic shadows / radii */
 .MuiPaper-root {
-  box-shadow: none !important;
-  border-radius: 0 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.1) !important;
+  border-radius: 12px !important;
+  border: 1px solid var(--iris-border) !important;
 }
 
 .MuiButton-root {
   box-shadow: none !important;
   text-transform: none !important;
-  border-radius: 20px !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease-in-out !important;
 }
 
-html,
-body,
-#root {
-  min-height: 100vh;
+.MuiButton-containedPrimary {
+  background-color: var(--iris-blue) !important;
 }
+
+.MuiButton-containedPrimary:hover {
+  background-color: var(--iris-blue-dark) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 51, 153, 0.15) !important;
+}
+
+.MuiTextField-root .MuiOutlinedInput-root {
+  border-radius: 8px !important;
+}
+
+/* --- CUSTOM UTILITIES --- */
+.premium-card {
+  background: white;
+  border: 1px solid var(--iris-border);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+}
+
+.bank-header-link {
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+  color: var(--iris-text-light) !important;
+  padding: 12px 16px !important;
+  position: relative !important;
+  transition: color 0.2s !important;
+  text-decoration: none !important;
+}
+
+.bank-header-link:hover {
+  color: var(--iris-blue) !important;
+}
+
+.bank-header-link.active {
+  color: var(--iris-blue) !important;
+}
+
+.bank-header-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: var(--iris-blue);
+}
+
+/* --- CHATBOT STYLES --- */
+.chatbot-container.MuiPaper-root {
+  border-radius: 16px !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid var(--iris-border) !important;
+}
+
+@keyframes messageAppear {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.chat-message {
+  animation: messageAppear 0.3s ease-out forwards;
+  padding: 12px 16px !important;
+  border-radius: 12px !important;
+}
+
+.chat-user-msg {
+  background: var(--iris-blue) !important;
+  color: white !important;
+  border-bottom-right-radius: 4px !important;
+}
+
+.chat-ai-msg {
+  background: #F1F5F9 !important;
+  color: var(--iris-text) !important;
+  border-bottom-left-radius: 4px !important;
+}
+
+/* Account Indicators */
+.account-indicator {
+    width: 4px;
+    height: 48px;
+    border-radius: 4px;
+    margin-right: 16px;
+}
+.indicator-courant { background: var(--iris-blue); }
+.indicator-epargne { background: #22C55E; }
+.indicator-pel { background: #EF4444; }
+
+/* Status Badges */
+.status-badge {
+    padding: 2px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+.status-success { background: #DCFCE7; color: #166534; }
+.status-pending { background: #FEF3C7; color: #92400E; }
+
+/* Beneficiary Bubbles */
+.benefit-bubble {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: white;
+    border: 1px solid var(--iris-border);
+    border-radius: 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 600;
+    font-size: 0.8rem;
+}
+.benefit-bubble:hover {
+    border-color: var(--iris-blue);
+    background: var(--iris-blue-light);
+    color: var(--iris-blue);
+}
+
+/* Stepper Customization */
+.MuiStepIcon-root {
+    width: 30px;
+    height: 30px;
+    color: #E2E8F0 !important;
+}
+.MuiStepIcon-root.Mui-active {
+    color: var(--iris-blue) !important;
+}
+.MuiStepIcon-root.Mui-completed {
+    color: #22C55E !important;
+}
+
+/* Date Grouping Separator */
+.date-header {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--iris-text);
+    padding: 24px 0 12px 0;
+    margin-top: 8px;
+}
+
+/* Minimal Grouped Card */
+.minimal-group-card {
+    background: white;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+/* Operation Row */
+.op-row {
+    display: flex;
+    align-items: center;
+    padding: 16px 24px;
+    border-bottom: 1px solid #F1F5F9;
+    transition: background-color 0.1s;
+    cursor: default;
+}
+.op-row:last-child {
+    border-bottom: none;
+}
+.op-row:hover {
+    background-color: #FAFBFC;
+}
+
+/* Balance Header Box */
+.balance-focus-box {
+    background: #F0F7FF;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 32px;
+    border: 1px solid #E0E7FF;
+}
+
+/* Monochrome Icons */
+.monochrome-icon-box {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #F8FAFC;
+    border-radius: 10px;
+    color: var(--iris-text-light);
+}
+
+/* Typography refinements */
+.text-pro-main {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--iris-text);
+}
+.text-pro-sub {
+    font-size: 0.75rem;
+    color: var(--iris-text-light);
+}
+.text-pro-amount {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--iris-text);
+    letter-spacing: -0.01em;
+}
+
+/* Final layout adjustments */
+@media (max-width: 600px) {
+    .premium-card {
+        padding: 16px;
+    }
+}
+
+
